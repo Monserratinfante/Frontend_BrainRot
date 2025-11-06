@@ -109,7 +109,9 @@ struct LoginRegisterView: View {
 
                     // Botón principal
                     Button {
-                        submit()
+                        Task {
+                            await submit()
+                        }
                     } label: {
                         Text(tabIndex == 0 ? "Ingresar" : "Crear cuenta")
                             .font(.headline).bold()
@@ -132,11 +134,11 @@ struct LoginRegisterView: View {
 
     private func clearErrors() { errorMsg = nil }
 
-    private func submit() {
+    private func submit() async {
         errorMsg = nil
         do {
             if tabIndex == 0 {
-                try auth.login(email: email, password: password)
+                try await AuthAPI.login(email: email, password: password)
             } else {
                 guard password == confirm else {
                     errorMsg = "Las contraseñas no coinciden."
@@ -146,7 +148,13 @@ struct LoginRegisterView: View {
                     errorMsg = "Debes aceptar la política de privacidad."
                     return
                 }
-                try auth.register(email: email, password: password, accepted: accepted)
+                //try auth.register(email: email, password: password, accepted: accepted)
+                try await AuthAPI.register(
+                    email: email,
+                    username: "myuser",
+                    password: password
+                )
+
             }
             goToDonations = true
             password = ""
