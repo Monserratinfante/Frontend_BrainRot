@@ -85,15 +85,11 @@ struct LoginRegisterView: View {
                                 .padding(14)
                                 .foregroundColor(.white)
                                 .background(RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 2))
+                            
 
-                            Toggle(isOn: $accepted) {
-                                Text("privacidad/ deslinde")
-                                    .foregroundColor(.white)
-                                    .font(.subheadline)
-                            }
-                            .toggleStyle(PrivacidadBox())
-                            .padding(.top, 4)
                         }
+                        PrivacidadBox(isChecked: $accepted)
+
                     }
                     .padding(.horizontal, 28)
 

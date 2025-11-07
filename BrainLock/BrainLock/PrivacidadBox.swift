@@ -7,25 +7,30 @@
 
 import SwiftUI
 
-struct PrivacidadBox: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 8) {
-            Button {
-                configuration.isOn.toggle()
-            } label: {
+struct PrivacidadBox: View {
+    @Binding var isChecked: Bool
+
+    var body: some View {
+        NavigationLink(destination: PDFViewerView(pdfName: "Privacidad")) {
+            HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 5)
-                    .strokeBorder(lineWidth: 2)
-                    .frame(width: 28, height: 28)
+                    .strokeBorder(Color.white, lineWidth: 2)
+                    .frame(width: 26, height: 26)
                     .overlay(
                         Group {
-                            if configuration.isOn {
+                            if isChecked {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
                             }
                         }
                     )
+
+                Text("Privacidad / Deslinde")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
             }
-            configuration.label
+            .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
     }
