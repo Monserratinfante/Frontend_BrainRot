@@ -1,18 +1,18 @@
 //
-//  AgregarProductoView.swift
+//  DonacionEnviada.swift
 //  BrainLock
 //
-//  Created by Alumno on 05/11/25.
+//  Created by Alumno on 07/11/25.
 //
 
 import SwiftUI
 
-struct AgregarProductoView: View {
+struct DonacionEnviada: View {
     var body: some View {
         Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
     }
 }
 
 #Preview {
-    AgregarProductoView()
+    DonacionEnviada()
 }
