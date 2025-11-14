@@ -22,7 +22,7 @@ struct LoginRegisterView: View {
     @State private var errorMsg: String? = nil
     @State private var goToDonations: Bool = false
 
-    private let azulOscuro = Color(red: 0.01, green: 0.23, blue: 0.36)
+    private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
     // Inicializador para establecer el modo inicial
     init(initialTab: Int = 0) {
@@ -34,11 +34,10 @@ struct LoginRegisterView: View {
         NavigationStack {
             ZStack {
                 // Fondo
-                Image("Colores")
+                Image("Fondo")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-                    .overlay(Color.black.opacity(0.35))
 
                 VStack(spacing: 22) {
                     Spacer().frame(height: 30)
@@ -55,13 +54,13 @@ struct LoginRegisterView: View {
                         Button(action: { tabIndex = 0; clearErrors() }) {
                             Text("LOGIN")
                                 .font(.title3).bold()
-                                .foregroundColor(tabIndex == 0 ? .white : .gray.opacity(0.7))
+                                .foregroundColor(tabIndex == 0 ? azulOscuro : .gray)
                         }
                         Text("|").foregroundColor(.gray.opacity(0.6))
                         Button(action: { tabIndex = 1; clearErrors() }) {
                             Text("REGISTER")
                                 .font(.title3).bold()
-                                .foregroundColor(tabIndex == 1 ? .white : .gray.opacity(0.7))
+                                .foregroundColor(tabIndex == 1 ? azulOscuro : .gray)
                         }
                     }
                     .padding(.top, 6)
@@ -72,19 +71,19 @@ struct LoginRegisterView: View {
                             .textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress)
                             .padding(14)
-                            .foregroundColor(.white)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 2))
+                            .foregroundColor(.black)
+                            .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
 
                         SecureField("password", text: $password)
                             .padding(14)
-                            .foregroundColor(.white)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 2))
+                            .foregroundColor(.black)
+                            .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
 
                         if tabIndex == 1 {
                             SecureField("confirm password", text: $confirm)
                                 .padding(14)
-                                .foregroundColor(.white)
-                                .background(RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 2))
+                                .foregroundColor(.black)
+                                .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
                             
 
                         }
@@ -160,3 +159,7 @@ struct LoginRegisterView: View {
         }
     }
 }
+
+
+
+
