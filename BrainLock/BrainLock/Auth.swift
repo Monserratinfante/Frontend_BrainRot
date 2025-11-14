@@ -18,7 +18,6 @@ struct RegisterPayload: Encodable {
 
 struct RegisterResponse: Decodable {
     let token: String
-    // Add any other fields your API returns if you need them
 }
 
 struct LoginPayload: Encodable {
@@ -28,6 +27,7 @@ struct LoginPayload: Encodable {
 
 struct LoginResponse: Decodable {
     let token: String
+    let role: String
 }
 
 // MARK: - Keychain
@@ -127,7 +127,7 @@ struct AuthAPI {
         }
     }
     
-    static func login(email: String, password: String) async throws {
+    static func login(email: String, password: String) async throws -> String {
             guard let url = URL(string: "/authentication/login", relativeTo: baseURL) else {
                 throw AuthError.invalidURL
             }
@@ -143,8 +143,9 @@ struct AuthAPI {
             guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                 throw AuthError.badStatus((resp as? HTTPURLResponse)?.statusCode ?? -1, nil)
             }
-
+        
             let decoded = try JSONDecoder().decode(LoginResponse.self, from: data)
             try saveJWTToKeychain(decoded.token)
+            return decoded.role
         }
 }
