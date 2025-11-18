@@ -14,6 +14,7 @@ struct Donacion: Identifiable {
     var descripcion: String
     var peso: String
     var estado: String? = nil // "En revisión", "Aceptada", "Cancelada"
+    var imagenes: [UIImage] = [] 
 }
 
 struct DonationsView: View {
