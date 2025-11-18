@@ -12,7 +12,6 @@ import Security
 
 struct RegisterPayload: Encodable {
     let email: String
-    let username: String
     let password: String
 }
 
@@ -93,7 +92,7 @@ struct AuthAPI {
     // Change this to your actual base URL
     static let baseURL = URL(string: "http://10.14.255.216:3000")!
 
-    static func register(email: String, username: String, password: String) async throws {
+    static func register(email: String, password: String) async throws {
         guard let url = URL(string: "/authentication/register", relativeTo: baseURL) else {
             throw AuthError.invalidURL
         }
@@ -101,7 +100,7 @@ struct AuthAPI {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONEncoder().encode(RegisterPayload(email: email, username: username, password: password))
+        req.httpBody = try JSONEncoder().encode(RegisterPayload(email: email, password: password))
 
         do {
             let (data, resp) = try await URLSession.shared.data(for: req)

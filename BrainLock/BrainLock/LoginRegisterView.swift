@@ -132,6 +132,10 @@ struct LoginRegisterView: View {
     private func submit() async {
         errorMsg = nil
         do {
+            guard accepted else {
+                errorMsg = "Debes aceptar la política de privacidad."
+                return
+            }
             if tabIndex == 0 {
                 let role = try await AuthAPI.login(email: email, password: password)
                 // TODO: redirect based on role
@@ -140,13 +144,8 @@ struct LoginRegisterView: View {
                     errorMsg = "Las contraseñas no coinciden."
                     return
                 }
-                guard accepted else {
-                    errorMsg = "Debes aceptar la política de privacidad."
-                    return
-                }
                 try await AuthAPI.register(
                     email: email,
-                    username: "myuser",
                     password: password
                 )
 
