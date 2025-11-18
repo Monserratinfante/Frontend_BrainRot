@@ -14,7 +14,8 @@ struct Donacion: Identifiable {
     var descripcion: String
     var peso: String
     var estado: String? = nil // "En revisión", "Aceptada", "Cancelada"
-    var imagenes: [UIImage] = [] 
+    var imagenes: [UIImage] = []
+    
 }
 
 struct DonationsView: View {
@@ -23,21 +24,25 @@ struct DonationsView: View {
     @State private var mostrarConfirmacion = false
     @State private var donacionSeleccionada: Donacion? = nil
     @State private var irADonacionEnviada = false
+    private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fondo con imagen + negro opaco
-                Image("Colores")
+                
+                azulOscuro
+                    .ignoresSafeArea()
+                // Fondo con imagen
+                Image("Fondo")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-                
-                Color.gray.opacity(0.85)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 16) {
                     BaseHeader(title: "Donaciones")
+
+                    
                     
                     // Botón de agregar donación arriba
                     Button {
@@ -46,9 +51,9 @@ struct DonationsView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundColor(azulOscuro)
                             Text("Agregar productos")
-                                .foregroundColor(.white)
+                                .foregroundColor(azulOscuro)
                                 .font(.headline)
                             Spacer()
                         }
@@ -70,9 +75,9 @@ struct DonationsView: View {
                             ForEach(donaciones) { item in
                                 HStack(alignment: .center) {
                                     VStack(alignment: .leading, spacing: 6) {
-                                        Text(item.clasificacion).font(.headline).foregroundColor(.white)
-                                        Text(item.descripcion).foregroundColor(.white)
-                                        Text("Peso: \(item.peso)").foregroundColor(.white)
+                                        Text(item.clasificacion).font(.headline).foregroundColor(.black)
+                                        Text(item.descripcion).foregroundColor(.black)
+                                        Text("Peso: \(item.peso)").foregroundColor(.black)
                                         if let estado = item.estado {
                                             Text("Estado: \(estado)").foregroundColor(.green)
                                         }
@@ -90,14 +95,14 @@ struct DonationsView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 56, height: 56)
-                                                .foregroundColor(.white)
+                                                .foregroundColor(.black)
                                         }
                                     }
                                 }
                                 .padding(14)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 6)
-                                        .stroke(.white, lineWidth: 2)
+                                        .stroke(.black, lineWidth: 2)
                                 )
                                 .padding(.horizontal, 20)
                             }
@@ -118,7 +123,7 @@ struct DonationsView: View {
                             .padding(.horizontal, 18)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(donaciones.isEmpty ? Color.gray : Color(red: 0.00, green: 0.55, blue: 0.60))
+                                    .fill(donaciones.isEmpty ? azulOscuro : Color(red: 0.00, green: 0.55, blue: 0.60))
                             )
                             .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 6)
                     }
@@ -156,39 +161,6 @@ struct DonationsView: View {
     }
 }
 
-struct DonacionEnviadaView: View {
-    let donacion: Donacion
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Donación enviada")
-                .font(.title)
-                .bold()
-            
-            if let foto = donacion.foto {
-                foto
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 150, height: 150)
-            } else {
-                Image(systemName: "shippingbox.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 100)
-            }
-            
-            Text("Clasificación: \(donacion.clasificacion)")
-            Text("Descripción: \(donacion.descripcion)")
-            Text("Peso: \(donacion.peso)")
-            Text("Estado: \(donacion.estado ?? "En revisión")")
-                .foregroundColor(.green)
-                .bold()
-            
-            Spacer()
-        }
-        .padding()
-    }
-}
 
 #Preview {
     DonationsView()

@@ -11,9 +11,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		FB88BD9E2EA82A0D00DED886 /* BrainLock */ = {
+		28D1F3FC2ECD078100B7649F /* BrainLockUsuario */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BrainLock;
+			path = BrainLockUsuario;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		FB88BD932EA82A0D00DED886 = {
 			isa = PBXGroup;
 			children = (
-				FB88BD9E2EA82A0D00DED886 /* BrainLock */,
+				28D1F3FC2ECD078100B7649F /* BrainLockUsuario */,
 				FB88BD9D2EA82A0D00DED886 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				FB88BD9E2EA82A0D00DED886 /* BrainLock */,
+				28D1F3FC2ECD078100B7649F /* BrainLockUsuario */,
 			);
 			name = BrainLock;
 			packageProductDependencies = (

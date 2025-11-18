@@ -9,14 +9,13 @@ import SwiftUI
 
 @main
 struct BrainLockApp: App {
-    @StateObject var authModel = AuthStore()
+     var authModel = AuthAPI()
 
     var body: some Scene {
         WindowGroup {
             NavigationStack {
                 VistaInicio()              // desde aquí navegas a LoginRegisterView()
             }
-            .environmentObject(authModel)
         }
     }
 }

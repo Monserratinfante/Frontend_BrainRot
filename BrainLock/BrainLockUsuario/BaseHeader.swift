@@ -10,6 +10,8 @@ import SwiftUI
 struct BaseHeader: View {
     var title: String
     var logoName: String = "Logo"
+    private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+    
 
     var body: some View {
         HStack {
@@ -28,12 +30,12 @@ struct BaseHeader: View {
                 Text(title.uppercased())
                     .font(.title).bold()
                     .tracking(2)
-                    .foregroundColor(.white)
+                    .foregroundColor(azulOscuro)
             }
 
             Spacer() // empuja todo a la izquierda o crea balance visual
         }
         .padding(.horizontal, 20)
-        .padding(.top, 20)
+        .padding(.top, 90)
     }
 }

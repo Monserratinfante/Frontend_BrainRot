@@ -24,6 +24,7 @@ struct AgregarDonacionView: View {
     @State private var descripcion = ""
     @State private var peso = ""
     
+    
     @State private var selectedImages: [UIImage] = []
     @State private var showingImagePicker = false
     @State private var inputImage: UIImage?
@@ -55,18 +56,39 @@ struct AgregarDonacionView: View {
                                 .foregroundColor(azulOscuro)
                                 .bold()
                             
-                            Picker("Selecciona una opción", selection: $clasificacion) {
-                                ForEach(opcionesClasificacion, id: \.self) { opcion in
-                                    Text(opcion)
+                            Menu {
+                                // Placeholder dentro del menú
+                                Button {
+                                    clasificacion = ""
+                                } label: {
+                                    Text("Selecciona una opción")
                                 }
+                                
+                                // Opciones reales
+                                ForEach(opcionesClasificacion, id: \.self) { opcion in
+                                    Button {
+                                        clasificacion = opcion
+                                    } label: {
+                                        Text(opcion)
+                                    }
+                                }
+                                
+                            } label: {
+                                HStack {
+                                    Text(clasificacion.isEmpty ? "Selecciona una opción" : clasificacion)
+                                        .foregroundColor(azulOscuro)   // texto azulOscuro
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(azulOscuro)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(8)
                             }
-                            .pickerStyle(.menu)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(8)
                         }
                         .padding(.horizontal)
+
                         
                         // Descripción
                         VStack(alignment: .leading, spacing: 8) {

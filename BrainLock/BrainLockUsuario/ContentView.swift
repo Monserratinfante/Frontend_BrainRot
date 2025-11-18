@@ -6,8 +6,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var auth: AuthStore
-
     // Estado de splash/animación
     @State private var isLoading = true
     @State private var scale: CGFloat = 1.0
@@ -50,5 +48,4 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environmentObject(AuthStore()) // Se inyecta un AuthStore solo para el preview
 }
