@@ -3,16 +3,16 @@
 //  BrainLock
 //
 //  Created by Alumno on 14/11/25.
-
+//
 
 import SwiftUI
 import UIKit
 
-// MARK: - Modelo
+// MARK: - Modelo actualizado
 struct DonacionView {
     var clasificacion: String
     var descripcion: String
-    var peso: String
+    var peso: String   // almacenará "X kg" o "X g"
     var imagenes: [UIImage] = []
 }
 
@@ -20,20 +20,33 @@ struct DonacionView {
 struct AgregarDonacionView: View {
     @Environment(\.dismiss) var dismiss
     
+    // Campos
     @State private var clasificacion = ""
     @State private var descripcion = ""
     @State private var peso = ""
+    @State private var unidadPeso = "kg"
     
+    // Errores
+    @State private var errorClasificacion = false
+    @State private var errorDescripcion = false
+    @State private var errorPeso = false
     
+    // Imagenes
     @State private var selectedImages: [UIImage] = []
     @State private var showingImagePicker = false
     @State private var inputImage: UIImage?
     @State private var pickerSource: UIImagePickerController.SourceType = .photoLibrary
     
+    let unidades = ["kg", "g"]
     let opcionesClasificacion = ["Salud", "Higiene", "Alimentos", "Calzado", "Medicamentos", "Otro"]
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
     
     var onAgregar: (Donacion) -> Void
+    
+    // Navegación nueva
+    @State private var irADonacionEnviada = false
+    @State private var irABasares = false
+    @State private var donacionFinal: Donacion?
     
     var body: some View {
         NavigationStack {
@@ -45,79 +58,129 @@ struct AgregarDonacionView: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
+                        
                         Text("Agregar Producto")
                             .font(.largeTitle.bold())
                             .foregroundColor(azulOscuro)
                             .padding(.top, 100)
                         
-                        // Clasificación
-                        HStack(spacing: 16) {
-                            Text("Clasificación:")
-                                .foregroundColor(azulOscuro)
-                                .bold()
-                            
-                            Menu {
-                                // Placeholder dentro del menú
-                                Button {
-                                    clasificacion = ""
-                                } label: {
-                                    Text("Selecciona una opción")
-                                }
+                        // -------------------------------
+                        // CLASIFICACIÓN
+                        // -------------------------------
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 16) {
+                                Text("Clasificación:")
+                                    .foregroundColor(azulOscuro)
+                                    .bold()
                                 
-                                // Opciones reales
-                                ForEach(opcionesClasificacion, id: \.self) { opcion in
-                                    Button {
-                                        clasificacion = opcion
-                                    } label: {
-                                        Text(opcion)
+                                Menu {
+                                    Button("Selecciona una opción") {
+                                        clasificacion = ""
                                     }
+                                    
+                                    ForEach(opcionesClasificacion, id: \.self) { opcion in
+                                        Button(opcion) {
+                                            clasificacion = opcion
+                                        }
+                                    }
+                                    
+                                } label: {
+                                    HStack {
+                                        Text(clasificacion.isEmpty ? "Selecciona una opción" : clasificacion)
+                                            .foregroundColor(azulOscuro)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundColor(azulOscuro)
+                                    }
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 8)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(8)
                                 }
-                                
-                            } label: {
-                                HStack {
-                                    Text(clasificacion.isEmpty ? "Selecciona una opción" : clasificacion)
-                                        .foregroundColor(azulOscuro)   // texto azulOscuro
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                        .foregroundColor(azulOscuro)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
-                                .background(Color.white.opacity(0.2))
-                                .cornerRadius(8)
+                            }
+                            
+                            if errorClasificacion {
+                                Text("Debes seleccionar una clasificación.")
+                                    .foregroundColor(.red)
+                                    .font(.caption)
                             }
                         }
                         .padding(.horizontal)
-
                         
-                        // Descripción
-                        VStack(alignment: .leading, spacing: 8) {
+                        
+                        // -------------------------------
+                        // DESCRIPCIÓN
+                        // -------------------------------
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("Descripción")
                                 .foregroundColor(azulOscuro)
                                 .bold()
+                            
                             TextField("Descripción de la donación", text: $descripcion)
                                 .padding()
                                 .background(Color.white.opacity(0.2))
                                 .cornerRadius(8)
                                 .foregroundColor(azulOscuro)
+                            
+                            if errorDescripcion {
+                                Text("Este campo es obligatorio.")
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                            }
                         }
                         .padding(.horizontal)
                         
-                        // Peso
-                        VStack(alignment: .leading, spacing: 8) {
+                        
+                        // -------------------------------
+                        // PESO + PICKER (KG/G)
+                        // -------------------------------
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("Peso")
                                 .foregroundColor(azulOscuro)
                                 .bold()
-                            TextField("Peso aproximado", text: $peso)
-                                .keyboardType(.decimalPad)
+                            
+                            HStack {
+                                TextField("Peso", text: Binding(
+                                    get: {
+                                        peso
+                                    },
+                                    set: { newValue in
+                                        // SOLO números
+                                        let filtered = newValue.filter { $0.isNumber }
+                                        peso = filtered
+                                    }
+                                ))
+                                .keyboardType(.numberPad)
                                 .padding()
                                 .background(Color.white.opacity(0.2))
                                 .cornerRadius(8)
                                 .foregroundColor(azulOscuro)
+                                
+                                // Picker de unidad
+                                Picker("", selection: $unidadPeso) {
+                                    ForEach(unidades, id: \.self) { unidad in
+                                        Text(unidad)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 70)
+                                .padding(8)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(8)
+                            }
+                            
+                            if errorPeso {
+                                Text("Debes ingresar un peso válido.")
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                            }
                         }
                         .padding(.horizontal)
                         
-                        // Imágenes
+                        
+                        // -------------------------------
+                        // IMÁGENES
+                        // -------------------------------
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Imágenes")
                                 .foregroundColor(azulOscuro)
@@ -125,6 +188,7 @@ struct AgregarDonacionView: View {
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
+                                    
                                     ForEach(selectedImages, id: \.self) { image in
                                         Image(uiImage: image)
                                             .resizable()
@@ -169,16 +233,11 @@ struct AgregarDonacionView: View {
                         }
                         .padding(.horizontal)
                         
-                        // Botón Agregar
-                        Button(action: {
-                            let nueva = Donacion(
-                                clasificacion: clasificacion,
-                                descripcion: descripcion,
-                                peso: peso,
-                                imagenes: selectedImages
-                            )
-                            onAgregar(nueva)
-                        }) {
+                        
+                        // -------------------------------
+                        // BOTÓN AGREGAR
+                        // -------------------------------
+                        Button(action: validarYRedirigir) {
                             Text("Agregar")
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -187,9 +246,9 @@ struct AgregarDonacionView: View {
                                 .cornerRadius(12)
                         }
                         .padding(.horizontal)
-                        .disabled(descripcion.isEmpty || peso.isEmpty)
                         
-                        // Botón Cancelar
+                        
+                        // CANCELAR
                         Button(action: { dismiss() }) {
                             Text("Cancelar")
                                 .foregroundColor(azulOscuro)
@@ -204,6 +263,17 @@ struct AgregarDonacionView: View {
                 }
             }
         }
+        // Navega a "Donación Enviada"
+        .navigationDestination(isPresented: $irADonacionEnviada) {
+            if let d = donacionFinal {
+                DonacionEnviadaView(donacion: d)
+            }
+        }
+        // Navega a "Basares"
+        .navigationDestination(isPresented: $irABasares) {
+            BasarView()   // <--- CAMBIA ESTE NOMBRE SI TU VISTA SE LLAMA DISTINTO
+        }
+        
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(image: $inputImage, sourceType: pickerSource)
                 .onDisappear {
@@ -214,9 +284,50 @@ struct AgregarDonacionView: View {
                 }
         }
     }
+    
+    // -------------------------------
+    // VALIDACIÓN + REDIRECCIÓN NUEVA
+    // -------------------------------
+    func validarYRedirigir() {
+        errorClasificacion = clasificacion.isEmpty
+        errorDescripcion = descripcion.isEmpty
+        errorPeso = peso.isEmpty
+        
+        if errorClasificacion || errorDescripcion || errorPeso {
+            return
+        }
+        
+        guard let pesoNum = Double(peso) else {
+            errorPeso = true
+            return
+        }
+        
+        let pesoKg = unidadPeso == "g" ? pesoNum / 1000 : pesoNum
+        
+        let pesoFinal = "\(peso) \(unidadPeso)"
+        
+        let nueva = Donacion(
+            clasificacion: clasificacion,
+            descripcion: descripcion,
+            peso: pesoFinal,
+            imagenes: selectedImages
+        )
+        
+        donacionFinal = nueva
+        onAgregar(nueva)
+        
+        // REGLA NUEVA:
+        if pesoKg > 50 {
+            irADonacionEnviada = true
+        } else {
+            irABasares = true
+        }
+    }
 }
 
-// MARK: - ImagePicker integrado
+
+
+// MARK: - ImagePicker
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     var sourceType: UIImagePickerController.SourceType = .photoLibrary
@@ -250,6 +361,7 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
     }
 }
+
 
 // MARK: - Preview
 #Preview {

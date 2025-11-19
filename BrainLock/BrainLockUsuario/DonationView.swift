@@ -18,13 +18,14 @@ struct Donacion: Identifiable {
     
 }
 
-struct DonationsView: View {
+struct DonationView: View {
     @State private var donaciones: [Donacion] = [] // Lista vacía por defecto
     @State private var mostrarAgregar = false
     @State private var mostrarConfirmacion = false
     @State private var donacionSeleccionada: Donacion? = nil
     @State private var irADonacionEnviada = false
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+    
     
     var body: some View {
         NavigationStack {
@@ -39,9 +40,9 @@ struct DonationsView: View {
                     .ignoresSafeArea()
                     .ignoresSafeArea()
                 
-                VStack(spacing: 16) {
-                    BaseHeader(title: "Donaciones")
-
+                VStack {
+                    BaseHeader(title: "Donacion")
+                    
                     
                     
                     // Botón de agregar donación arriba
@@ -52,7 +53,7 @@ struct DonationsView: View {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title2)
                                 .foregroundColor(azulOscuro)
-                            Text("Agregar productos")
+                            Text("Agregar donacion")
                                 .foregroundColor(azulOscuro)
                                 .font(.headline)
                             Spacer()
@@ -118,12 +119,12 @@ struct DonationsView: View {
                         Text("Enviar donación")
                             .multilineTextAlignment(.center)
                             .font(.headline).bold()
-                            .foregroundColor(.white)
+                            .foregroundColor(azulOscuro)
                             .padding(.vertical, 14)
                             .padding(.horizontal, 18)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(donaciones.isEmpty ? azulOscuro : Color(red: 0.00, green: 0.55, blue: 0.60))
+                                    .fill(donaciones.isEmpty ? .white : Color(red: 0.00, green: 0.55, blue: 0.60))
                             )
                             .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 6)
                     }
@@ -140,28 +141,44 @@ struct DonationsView: View {
             }
             // Alerta de confirmación de envío
             .alert("¿Estás seguro de enviar la donación?", isPresented: $mostrarConfirmacion) {
-                Button("Cancelar", role: .cancel) { }
-                Button("Enviar") {
+
+                // Botón Cancelar (Blanco)
+                Button(role: .cancel) {
+                    
+                } label: {
+                    Text("Cancelar")
+                        .foregroundColor(.white)
+                }
+
+                // Botón Enviar (Azul oscuro)
+                Button {
                     if let index = donaciones.firstIndex(where: { $0.id == donacionSeleccionada?.id }) {
                         donaciones[index].estado = "En revisión"
                         irADonacionEnviada = true
                     }
+                } label: {
+                    Text("Enviar")
+                        .foregroundColor(Color(red: 0.0039, green: 0.227, blue: 0.3647)) // azul oscuro
+                        .bold()
                 }
             }
-            // Navegación a la vista de donación enviada, si no la uso se caga todo 
+                        
+            // Navegación a la vista de donación enviada
             .navigationDestination(isPresented: $irADonacionEnviada) {
                 if let donacion = donacionSeleccionada {
+                 
                     DonacionEnviadaView(donacion: donacion)
                 } else {
                     Text("Error: No hay donación seleccionada")
                 }
             }
             .navigationBarBackButtonHidden(true)
+
         }
     }
+    
 }
 
-
 #Preview {
-    DonationsView()
+    DonationView()
 }

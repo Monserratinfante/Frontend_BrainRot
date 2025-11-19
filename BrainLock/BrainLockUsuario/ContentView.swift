@@ -14,7 +14,7 @@ struct ContentView: View {
         ZStack {
             if isLoading {
                 ZStack {
-                    Image("Portada")
+                    Image("Portada3")
                         .resizable()
                         .scaledToFill()
                         .ignoresSafeArea()

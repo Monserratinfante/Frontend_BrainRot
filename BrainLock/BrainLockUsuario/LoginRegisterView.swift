@@ -121,7 +121,7 @@ struct LoginRegisterView: View {
                 .padding(.bottom, 16)
             }
             .navigationDestination(isPresented: $goToDonations) {
-                DonationsView()
+                DonationView()
             }
         }
     }

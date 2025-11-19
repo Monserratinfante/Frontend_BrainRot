@@ -35,7 +35,7 @@ struct BaseHeader: View {
 
             Spacer() // empuja todo a la izquierda o crea balance visual
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 10)
         .padding(.top, 90)
     }
 }
