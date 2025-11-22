@@ -15,7 +15,7 @@ struct Donacion: Identifiable {
     var peso: String
     var estado: String? = nil // "En revisión", "Aceptada", "Cancelada"
     var imagenes: [UIImage] = []
-    
+
 }
 
 struct DonationView: View {
@@ -25,6 +25,8 @@ struct DonationView: View {
     @State private var donacionSeleccionada: Donacion? = nil
     @State private var irADonacionEnviada = false
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+    @State private var irABasares = false
+
     
     
     var body: some View {
@@ -96,14 +98,14 @@ struct DonationView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 56, height: 56)
-                                                .foregroundColor(.black)
+                                                .foregroundColor(.gray)
                                         }
                                     }
                                 }
                                 .padding(14)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 6)
-                                        .stroke(.black, lineWidth: 2)
+                                        .stroke(.gray, lineWidth: 2)
                                 )
                                 .padding(.horizontal, 20)
                             }
@@ -167,7 +169,7 @@ struct DonationView: View {
             .navigationDestination(isPresented: $irADonacionEnviada) {
                 if let donacion = donacionSeleccionada {
                  
-                    DonacionEnviadaView(donacion: donacion)
+                    DonationEnviadaView(donacion: donacion)
                 } else {
                     Text("Error: No hay donación seleccionada")
                 }

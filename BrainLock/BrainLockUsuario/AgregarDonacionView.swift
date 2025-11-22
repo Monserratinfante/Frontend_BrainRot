@@ -7,6 +7,8 @@
 
 import SwiftUI
 import UIKit
+import MapKit
+
 
 // MARK: - Modelo actualizado
 struct DonacionView {
@@ -64,9 +66,7 @@ struct AgregarDonacionView: View {
                             .foregroundColor(azulOscuro)
                             .padding(.top, 100)
                         
-                        // -------------------------------
                         // CLASIFICACIÓN
-                        // -------------------------------
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 16) {
                                 Text("Clasificación:")
@@ -108,9 +108,7 @@ struct AgregarDonacionView: View {
                         .padding(.horizontal)
                         
                         
-                        // -------------------------------
                         // DESCRIPCIÓN
-                        // -------------------------------
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Descripción")
                                 .foregroundColor(azulOscuro)
@@ -131,9 +129,7 @@ struct AgregarDonacionView: View {
                         .padding(.horizontal)
                         
                         
-                        // -------------------------------
                         // PESO + PICKER (KG/G)
-                        // -------------------------------
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Peso")
                                 .foregroundColor(azulOscuro)
@@ -178,9 +174,7 @@ struct AgregarDonacionView: View {
                         .padding(.horizontal)
                         
                         
-                        // -------------------------------
                         // IMÁGENES
-                        // -------------------------------
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Imágenes")
                                 .foregroundColor(azulOscuro)
@@ -234,9 +228,7 @@ struct AgregarDonacionView: View {
                         .padding(.horizontal)
                         
                         
-                        // -------------------------------
                         // BOTÓN AGREGAR
-                        // -------------------------------
                         Button(action: validarYRedirigir) {
                             Text("Agregar")
                                 .foregroundColor(.white)
@@ -266,14 +258,23 @@ struct AgregarDonacionView: View {
         // Navega a "Donación Enviada"
         .navigationDestination(isPresented: $irADonacionEnviada) {
             if let d = donacionFinal {
-                DonacionEnviadaView(donacion: d)
+                DonationEnviadaView(donacion: d)
             }
         }
         // Navega a "Basares"
+        // Navega a "Basares"
         .navigationDestination(isPresented: $irABasares) {
-            BasarView()   // <--- CAMBIA ESTE NOMBRE SI TU VISTA SE LLAMA DISTINTO
+            BasarMapTemplate(
+                basarName: "Basar Principal",
+                address: "Monte Cristal 141, Juárez N.L.",
+                region: MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: 25.6510, longitude: -100.2040),
+                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                ),
+                coordinate: CLLocationCoordinate2D(latitude: 25.6510, longitude: -100.2040)
+            )
         }
-        
+
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(image: $inputImage, sourceType: pickerSource)
                 .onDisappear {
@@ -285,9 +286,8 @@ struct AgregarDonacionView: View {
         }
     }
     
-    // -------------------------------
     // VALIDACIÓN + REDIRECCIÓN NUEVA
-    // -------------------------------
+
     func validarYRedirigir() {
         errorClasificacion = clasificacion.isEmpty
         errorDescripcion = descripcion.isEmpty

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct DonacionEnviadaView: View {
+struct DonationEnviadaView: View {
     let donacion: Donacion
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
     
@@ -22,27 +22,36 @@ struct DonacionEnviadaView: View {
             
             VStack {
                 Spacer()
+                
                 Text("Donación enviada")
                     .font(.title)
                     .bold()
                     .foregroundStyle(azulOscuro)
                     .padding(20)
                 
-                if let foto = donacion.foto {
-                    foto
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 250, height: 250)
-                } else {
-                    Image(systemName: "shippingbox.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .foregroundStyle(.black)
+                //     CARRUSEL DE FOTOS
+                if !donacion.imagenes.isEmpty {
+                    TabView {
+                        ForEach(donacion.imagenes, id: \.self) { img in
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 280)
+                                .cornerRadius(12)
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+                    .onAppear {
+                        UIPageControl.appearance().currentPageIndicatorTintColor = UIColor.darkGray
+                        UIPageControl.appearance().pageIndicatorTintColor = UIColor.gray
+                    }
+                    .frame(height: 300)
                 }
+                
                 Spacer()
 
-                VStack{
+                VStack(spacing: 6) {
                     Text("Clasificación: \(donacion.clasificacion)")
                         .foregroundStyle(azulOscuro)
                     
@@ -51,14 +60,14 @@ struct DonacionEnviadaView: View {
                     
                     Text("Peso: \(donacion.peso)")
                         .foregroundStyle(azulOscuro)
+                    
                     Text("Estado: \(donacion.estado ?? "En revisión")")
                         .foregroundColor(.green)
                         .bold()
-                 
                 }
                 .cardStyle()
+                
                 Spacer()
-
             }
             .padding()
         }
@@ -66,16 +75,20 @@ struct DonacionEnviadaView: View {
 }
 
 
-
+// PREVIEW
 #Preview {
-    DonacionEnviadaView(
+    DonationEnviadaView(
         donacion: Donacion(
-            foto: Image(uiImage: UIImage(named: "termo")!), // CUALQUIER ASSET
-            clasificacion: "Ropa",
-            descripcion: "Tenis en buen estado",
-            peso: "2 kg",
-            estado: "Aceptada"
+            foto: nil,
+            clasificacion: "Otros",
+            descripcion: "termo, platos y toppers",
+            peso: "3 kg",
+            estado: "Aceptada",
+            imagenes: [
+                UIImage(named: "termo")!,
+                UIImage(named: "platos")!,
+                UIImage(named: "toppers")!
+            ]
         )
     )
 }
-
