@@ -5,26 +5,10 @@
 //  Created by Gladys Pérez on 05/11/25.
 //
 
-import SwiftUI
-
-struct EstadoBadge: View {
-    let estado: EstadoFolio
-
-    var body: some View {
-        Text(estado.rawValue)
-            .font(.caption)
-            .bold()
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(estado.color)
-            .foregroundColor(.white)
-            .clipShape(Capsule())
-    }
-}
-
+/*import SwiftUI
 
 struct FolioView: View {
-    @Binding var folio: Folio
+    @Binding var folio: Donation
 
     @State private var mostrarConfirmacion = false
     @State private var accionPendiente: EstadoFolio? = nil
@@ -102,7 +86,7 @@ struct FolioView: View {
                         Text("Autorizar")
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(EstadoFolio.aprobado.color)
+                            .background(.red)
                             .foregroundColor(.white)
                             .font(.headline)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -115,7 +99,7 @@ struct FolioView: View {
                         Text("Rechazar")
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(EstadoFolio.negado.color)
+                            .background(.red)
                             .foregroundColor(.white)
                             .font(.headline)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -170,3 +154,4 @@ struct FolioView: View {
         )
     )
 }
+*/

@@ -77,7 +77,6 @@ enum AuthError: Error, LocalizedError {
     case invalidURL
     case decodingFailed
     case network(Error)
-    case missingJWT
 
     var errorDescription: String? {
         switch self {
@@ -85,7 +84,6 @@ enum AuthError: Error, LocalizedError {
         case .invalidURL: return "Invalid URL."
         case .decodingFailed: return "Failed to decode server response."
         case .network(let err): return err.localizedDescription
-        case .missingJWT: return "Please log in"
         }
     }
 }
