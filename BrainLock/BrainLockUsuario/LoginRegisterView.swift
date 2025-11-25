@@ -19,7 +19,7 @@ struct LoginRegisterView: View {
     @State private var confirm: String = ""
     @State private var accepted: Bool = false
     @State private var errorMsg: String? = nil
-    @State private var goToDonations: Bool = false
+    @AppStorage("loggedRole") private var loggedRole: String = ""
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
@@ -30,24 +30,23 @@ struct LoginRegisterView: View {
     }
 
     var body: some View {
-        NavigationStack {
             ZStack {
                 // Fondo
                 Image("Fondo")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-
+                
                 VStack(spacing: 22) {
                     Spacer().frame(height: 30)
-
+                    
                     // Logo
                     Image("Logo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180)
                         .padding(.top, 10)
-
+                    
                     // Selector entre Login y Registro
                     HStack(spacing: 8) {
                         Button(action: { tabIndex = 0; clearErrors() }) {
@@ -63,7 +62,7 @@ struct LoginRegisterView: View {
                         }
                     }
                     .padding(.top, 6)
-
+                    
                     // Campos de texto
                     Group {
                         TextField("email", text: $email)
@@ -72,25 +71,25 @@ struct LoginRegisterView: View {
                             .padding(14)
                             .foregroundColor(.black)
                             .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
-
+                        
                         SecureField("password", text: $password)
                             .padding(14)
                             .foregroundColor(.black)
                             .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
-
+                        
                         if tabIndex == 1 {
                             SecureField("confirm password", text: $confirm)
                                 .padding(14)
                                 .foregroundColor(.black)
                                 .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
                             
-
+                            
                         }
                         PrivacidadBox(isChecked: $accepted)
-
+                        
                     }
                     .padding(.horizontal, 28)
-
+                    
                     // Mensaje de error
                     if let msg = errorMsg {
                         Text(msg)
@@ -100,7 +99,7 @@ struct LoginRegisterView: View {
                             .padding(.horizontal, 28)
                             .multilineTextAlignment(.center)
                     }
-
+                    
                     // Botón principal
                     Button {
                         Task {
@@ -115,15 +114,11 @@ struct LoginRegisterView: View {
                             .background(Capsule().fill(azulOscuro))
                     }
                     .padding(.top, 4)
-
+                    
                     Spacer()
                 }
                 .padding(.bottom, 16)
             }
-            .navigationDestination(isPresented: $goToDonations) {
-                DonationView()
-            }
-        }
     }
 
     private func clearErrors() { errorMsg = nil }
@@ -135,27 +130,36 @@ struct LoginRegisterView: View {
                 errorMsg = "Debes aceptar la política de privacidad."
                 return
             }
+
             if tabIndex == 0 {
                 let role = try await AuthAPI.login(email: email, password: password)
-                // TODO: redirect based on role
+
+                if role == "USER" {
+                    loggedRole = "USER"
+                } else if role == "ADMIN" {
+                    loggedRole = "ADMIN"
+                } else {
+                    errorMsg = "Your user's role is not supported. Contact us."
+                }
+
             } else {
                 guard password == confirm else {
                     errorMsg = "Las contraseñas no coinciden."
                     return
                 }
-                try await AuthAPI.register(
-                    email: email,
-                    password: password
-                )
 
+                try await AuthAPI.register(email: email, password: password)
+                loggedRole = "USER"
             }
-            goToDonations = true
+
             password = ""
             confirm = ""
+
         } catch {
             errorMsg = error.localizedDescription
         }
     }
+
 }
 
 

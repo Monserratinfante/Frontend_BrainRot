@@ -5,13 +5,12 @@
 //  Created by Gladys Pérez on 05/11/25.
 //
 
-/*import SwiftUI
+import SwiftUI
 
-struct FolioView: View {
-    @Binding var folio: Donation
+/*struct FolioView: View {
+    var id: Int
 
     @State private var mostrarConfirmacion = false
-    @State private var accionPendiente: EstadoFolio? = nil
 
     var body: some View {
         ScrollView {
@@ -154,4 +153,5 @@ struct FolioView: View {
         )
     )
 }
+
 */

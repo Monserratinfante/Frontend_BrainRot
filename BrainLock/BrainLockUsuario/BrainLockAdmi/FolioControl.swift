@@ -9,7 +9,7 @@ import SwiftUI
 
 struct Donation: Decodable, Identifiable {
     var id: Int
-    var date: Date
+    var createdAt: Date
 }
 
 struct FolioControl: View {
@@ -46,7 +46,11 @@ struct FolioControl: View {
                     } else {
                         VStack(spacing: 16) {
                             ForEach(donations) { donation in
-                                TarjetaDonation(donation: donation)
+                                NavigationLink {
+                                    //FolioView(id: donation.id)
+                                } label: {
+                                    TarjetaDonation(donation: donation)
+                                }
                             }
                         }
                     }
@@ -81,7 +85,6 @@ struct TarjetaDonation: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("ID: \(donation.id)")
@@ -89,7 +92,7 @@ struct TarjetaDonation: View {
                         .font(.headline)
                         .bold()
 
-                    Text(donation.date.formatted(date: .numeric, time: .omitted))
+                    Text(donation.createdAt.formatted(date: .numeric, time: .omitted))
                         .foregroundColor(.gray)
                         .font(.subheadline)
                 }
@@ -133,18 +136,18 @@ func getDonations() async throws -> [Donation] {
     }
 
     var req = URLRequest(url: url)
-    req.httpMethod = "POST"
+    req.httpMethod = "GET"
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
     req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
 
     let (data, response) = try await URLSession.shared.data(for: req)
-
     guard let httpResponse = response as? HTTPURLResponse,
           200..<300 ~= httpResponse.statusCode else {
         throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
     }
-
+    print(data)
     let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
     return try decoder.decode([Donation].self, from: data)
 }
 

@@ -9,6 +9,8 @@ struct ContentView: View {
     // Estado de splash/animación
     @State private var isLoading = true
     @State private var scale: CGFloat = 1.0
+    
+    @AppStorage("loggedRole") private var loggedRole: String = ""
 
     var body: some View {
         ZStack {
@@ -37,9 +39,15 @@ struct ContentView: View {
                             }
                         }
                 }
-            } else {
-                VistaInicio()
-                    .transition(.opacity)
+            }  else {
+                // Root decision
+                if loggedRole.isEmpty {
+                    VistaInicio()        // Shows login/register buttons
+                } else if loggedRole == "USER" {
+                    DonationView()
+                } else if loggedRole == "ADMIN" {
+                    FolioControl()
+                }
             }
         }
     }
