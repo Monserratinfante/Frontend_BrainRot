@@ -12,6 +12,8 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            
+            Color.black.ignoresSafeArea()
             if isLoading {
                 ZStack {
                     Image("Portada3")
@@ -30,7 +32,7 @@ struct ContentView: View {
                             withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
                                 scale = 2.05
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
                                 withAnimation(.easeInOut) {
                                     isLoading = false
                                 }
@@ -38,8 +40,12 @@ struct ContentView: View {
                         }
                 }
             } else {
-                VistaInicio()
-                    .transition(.opacity)
+                
+                NavigationStack{
+                    VistaInicio()
+                        .transition(.opacity)
+                }
+                .transition(.opacity)
             }
         }
     }
