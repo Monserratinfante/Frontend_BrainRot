@@ -756,10 +756,12 @@ Tel. 81 27 04 38 70
         )
     }
 }
-
+//arreglo de objetos
+//clase de bazares
 // Preview de ejemplo
 #Preview {
     NavigationStack {
-        Basar20View()   // cámbialo por el bazar que quieras probar
+        Basar1View()   // cámbialo por el bazar que quieras probar
     }
 }
+

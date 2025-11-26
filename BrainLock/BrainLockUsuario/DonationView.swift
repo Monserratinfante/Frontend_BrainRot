@@ -43,7 +43,7 @@ struct DonationView: View {
                     .ignoresSafeArea()
                 
                 VStack {
-                    BaseHeader(title: "Donacion")
+                    BaseHeader(title: "Donaciones")
                     
                     
                     
@@ -136,11 +136,9 @@ struct DonationView: View {
             }
             // Sheet para agregar nueva donación
             .sheet(isPresented: $mostrarAgregar) {
-                AgregarDonacionView { nuevaDonacion in
-                    donaciones.append(nuevaDonacion)
-                    mostrarAgregar = false
+                AgregarDonacionView ()
+                   
                 }
-            }
             // Alerta de confirmación de envío
             .alert("¿Estás seguro de enviar la donación?", isPresented: $mostrarConfirmacion) {
 
