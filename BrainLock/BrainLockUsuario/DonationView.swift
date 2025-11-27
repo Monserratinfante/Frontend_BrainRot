@@ -199,7 +199,7 @@ struct DonationView: View {
 
             // Navegación a bazares (usamos tu vista ya hecha)
             .navigationDestination(isPresented: $irABasares) {
-                Basar1View()   // tu bazar principal
+                BazarListView()   // tu bazar principal
             }
 
             .navigationBarBackButtonHidden(true)
