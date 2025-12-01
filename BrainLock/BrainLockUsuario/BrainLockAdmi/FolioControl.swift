@@ -2,8 +2,6 @@
 //  FolioControl.swift
 //  BrainLock
 //
-//  Created by Fatima Cruz Hernandez on 18/11/25.
-//
 
 import SwiftUI
 

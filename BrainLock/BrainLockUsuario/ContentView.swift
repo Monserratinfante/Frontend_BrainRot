@@ -9,8 +9,8 @@ struct ContentView: View {
     // Estado de splash/animación
     @State private var isLoading = true
     @State private var scale: CGFloat = 1.0
-    
-    @AppStorage("loggedRole") private var loggedRole: String = ""
+    @State private var isCheckingSession = false
+    @State private var validatedRole: Roles = Roles.GUEST
 
     var body: some View {
         ZStack {
@@ -40,43 +40,51 @@ struct ContentView: View {
                             }
                         }
                 }
-            }  else {
-                // Root decision                
-                if loggedRole.isEmpty {
-                    VistaInicio()        // Shows login/register buttons
-                } else if loggedRole == "USER" {
+            } else if isCheckingSession {
+                ProgressView("Validando sesión...")
+                    .foregroundColor(.white)
+            } else {
+                rootDecisionView
+            }
+        }.onAppear {
+            checkSession()
+        }
+    }
+    
+    // MARK: - Routing Logic
+        @ViewBuilder
+        private var rootDecisionView: some View {
+            switch validatedRole {
+                case Roles.USER:
                     DonationView()
-                } else if loggedRole == "ADMIN" {
+                case Roles.ADMIN:
                     FolioControl()
+                default:
+                VistaInicio(validatedRole: $validatedRole)
+            }
+        }
+
+        // MARK: - Validate Session
+        private func checkSession() {
+            isCheckingSession = true
+
+            Task {
+                do {
+                    let result = try await AuthAPI.validateSession()
+                    DispatchQueue.main.async {
+                        validatedRole = Roles(from: result.role)
+                        isCheckingSession = false
+                    }
+                } catch {
+                    print(error.localizedDescription)
+                    // Session invalid → go to login
+                    DispatchQueue.main.async {
+                        validatedRole = Roles.GUEST
+                        isCheckingSession = false
+                    }
                 }
             }
         }
-    }
-}
-
-func validateSession() async throws -> Roles {
-    guard let url = URL(string: "/authorization/validate", relativeTo: AuthAPI.baseURL) else {
-        throw AuthError.invalidURL
-    }
-
-    guard let jwt = try? readJWTFromKeychain() else {
-        throw AuthError.missingJWT
-    }
-
-    var req = URLRequest(url: url)
-    req.httpMethod = "GET"
-    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
-
-    let (data, response) = try await URLSession.shared.data(for: req)
-    guard let httpResponse = response as? HTTPURLResponse,
-          200..<300 ~= httpResponse.statusCode else {
-        throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
-    }
-    
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-    return try decoder.decode(Roles.self, from: data)
 }
 
 #Preview {

@@ -10,9 +10,22 @@ import Security
 
 // MARK: - Models
 
-enum Roles: Decodable {
+struct ValidatePayload: Decodable {
+    let role: String
+}
+
+enum Roles {
     case USER
     case ADMIN
+    case GUEST
+    
+    init(from backend: String) {
+        switch backend.uppercased() {
+            case "USER": self = .USER
+            case "ADMIN": self = .ADMIN
+            default: self = .GUEST
+        }
+    }
 }
 
 struct RegisterPayload: Encodable {
@@ -154,4 +167,28 @@ struct AuthAPI {
             try saveJWTToKeychain(decoded.token)
             return decoded.role
         }
+    
+    static func validateSession() async throws -> ValidatePayload {
+        guard let url = URL(string: "/authorization/validate", relativeTo: AuthAPI.baseURL) else {
+            throw AuthError.invalidURL
+        }
+
+        guard let jwt = try? readJWTFromKeychain() else {
+            throw AuthError.missingJWT
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
+        }
+        
+        let decoder = JSONDecoder()
+        return try decoder.decode(ValidatePayload.self, from: data)
+    }
 }

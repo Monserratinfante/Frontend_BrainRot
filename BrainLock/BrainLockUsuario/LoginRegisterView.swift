@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct LoginRegisterView: View {
+    @Binding var validatedRole: Roles
 
     // Recibe el modo inicial (0 = login, 1 = registro)
     var initialTab: Int = 0
@@ -19,13 +20,13 @@ struct LoginRegisterView: View {
     @State private var confirm: String = ""
     @State private var accepted: Bool = false
     @State private var errorMsg: String? = nil
-    @AppStorage("loggedRole") private var loggedRole: String = ""
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
     // Inicializador para establecer el modo inicial
-    init(initialTab: Int = 0) {
+    init(initialTab: Int = 0, validatedRole: Binding<Roles>) {
         self.initialTab = initialTab
+        self._validatedRole = validatedRole
         _tabIndex = State(initialValue: initialTab)
     }
 
@@ -135,9 +136,9 @@ struct LoginRegisterView: View {
                 let role = try await AuthAPI.login(email: email, password: password)
 
                 if role == "USER" {
-                    loggedRole = "USER"
+                    validatedRole = Roles.USER
                 } else if role == "ADMIN" {
-                    loggedRole = "ADMIN"
+                    validatedRole = Roles.ADMIN
                 } else {
                     errorMsg = "Your user's role is not supported. Contact us."
                 }
@@ -149,7 +150,7 @@ struct LoginRegisterView: View {
                 }
 
                 try await AuthAPI.register(email: email, password: password)
-                loggedRole = "USER"
+                validatedRole = Roles.USER
             }
 
             password = ""
