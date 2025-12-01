@@ -9,10 +9,11 @@ struct ContentView: View {
     // Estado de splash/animación
     @State private var isLoading = true
     @State private var scale: CGFloat = 1.0
+    @State private var isCheckingSession = false
+    @State private var validatedRole: Roles = Roles.GUEST
 
     var body: some View {
         ZStack {
-            
             Color.black.ignoresSafeArea()
             if isLoading {
                 ZStack {
@@ -39,18 +40,52 @@ struct ContentView: View {
                             }
                         }
                 }
+            } else if isCheckingSession {
+                ProgressView("Validando sesión...")
+                    .foregroundColor(.white)
             } else {
-                
-                NavigationStack{
-                    VistaInicio()
-                        .transition(.opacity)
-                }
-                .transition(.opacity)
+                rootDecisionView
             }
+        }.onAppear {
+            checkSession()
         }
     }
-}
+    
+    // MARK: - Routing Logic
+        @ViewBuilder
+        private var rootDecisionView: some View {
+            switch validatedRole {
+                case Roles.USER:
+                    DonationView()
+                case Roles.ADMIN:
+                    FolioControl()
+                default:
+                VistaInicio(validatedRole: $validatedRole)
+            }
+        }
 
+        // MARK: - Validate Session
+        private func checkSession() {
+            isCheckingSession = true
+
+            Task {
+                do {
+                    let result = try await AuthAPI.validateSession()
+                    DispatchQueue.main.async {
+                        validatedRole = Roles(from: result.role)
+                        isCheckingSession = false
+                    }
+                } catch {
+                    print(error.localizedDescription)
+                    // Session invalid → go to login
+                    DispatchQueue.main.async {
+                        validatedRole = Roles.GUEST
+                        isCheckingSession = false
+                    }
+                }
+            }
+        }
+}
 
 #Preview {
     ContentView()

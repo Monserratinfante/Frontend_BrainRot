@@ -9,6 +9,7 @@ import SwiftUI
 
 struct VistaInicio: View {
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+    @Binding var validatedRole: Roles
 
     
     var body: some View {
@@ -115,13 +116,13 @@ Cáritas de Monterrey, A.B.P. mantiene y amplia los canales de comunicacion inte
                         
                         // --- BOTONES ---
                         HStack(spacing: 40) {
-                            NavigationLink(destination: LoginRegisterView(initialTab: 0)) {
+                            NavigationLink(destination: LoginRegisterView(initialTab: 0, validatedRole: $validatedRole)) {
                                 Text(" Login")
                                     .font(.title3.bold())
                                     .foregroundColor(azulOscuro)
                             }
                             
-                            NavigationLink(destination: LoginRegisterView(initialTab: 1)) {
+                            NavigationLink(destination: LoginRegisterView(initialTab: 1, validatedRole: $validatedRole)) {
                                 Text("Register")
                                     .font(.title3.bold())
                                     .foregroundColor(azulOscuro)
@@ -139,7 +140,7 @@ Cáritas de Monterrey, A.B.P. mantiene y amplia los canales de comunicacion inte
 }
 
 #Preview {
-    VistaInicio()
+    VistaInicio(validatedRole: .constant(Roles.GUEST))
 }
 
 //
