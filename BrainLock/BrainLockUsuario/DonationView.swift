@@ -12,33 +12,37 @@ struct Donacion: Identifiable {
     var foto: Image? = nil
     var clasificacion: String
     var descripcion: String
-    var peso: String
+    var peso: String          // Ej: "10 kg" o "500 g"
     var estado: String? = nil // "En revisión", "Aceptada", "Cancelada"
-    var imagenes: [UIImage] = [] 
+    var imagenes: [UIImage] = []
 }
 
-struct DonationsView: View {
-    @State private var donaciones: [Donacion] = [] // Lista vacía por defecto
+struct DonationView: View {
+    @State private var donaciones: [Donacion] = []
     @State private var mostrarAgregar = false
     @State private var mostrarConfirmacion = false
     @State private var donacionSeleccionada: Donacion? = nil
+
     @State private var irADonacionEnviada = false
-    
+    @State private var irABasares = false
+
+    private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fondo con imagen + negro opaco
-                Image("Colores")
+
+                azulOscuro
+                    .ignoresSafeArea()
+
+                Image("Fondo")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-                
-                Color.gray.opacity(0.85)
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 16) {
+
+                VStack {
                     BaseHeader(title: "Donaciones")
-                    
+
                     // Botón de agregar donación arriba
                     Button {
                         mostrarAgregar = true
@@ -46,9 +50,9 @@ struct DonationsView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title2)
-                                .foregroundColor(.white)
-                            Text("Agregar productos")
-                                .foregroundColor(.white)
+                                .foregroundColor(azulOscuro)
+                            Text("Agregar donación")
+                                .foregroundColor(azulOscuro)
                                 .font(.headline)
                             Spacer()
                         }
@@ -64,17 +68,23 @@ struct DonationsView: View {
                         .padding(.horizontal, 20)
                     }
                     .buttonStyle(.plain)
-                    
+
+                    // Lista de donaciones
                     ScrollView {
                         VStack(spacing: 12) {
                             ForEach(donaciones) { item in
                                 HStack(alignment: .center) {
                                     VStack(alignment: .leading, spacing: 6) {
-                                        Text(item.clasificacion).font(.headline).foregroundColor(.white)
-                                        Text(item.descripcion).foregroundColor(.white)
-                                        Text("Peso: \(item.peso)").foregroundColor(.white)
+                                        Text(item.clasificacion)
+                                            .font(.headline)
+                                            .foregroundColor(.black)
+                                        Text(item.descripcion)
+                                            .foregroundColor(.black)
+                                        Text("Peso: \(item.peso)")
+                                            .foregroundColor(.black)
                                         if let estado = item.estado {
-                                            Text("Estado: \(estado)").foregroundColor(.green)
+                                            Text("Estado: \(estado)")
+                                                .foregroundColor(.green)
                                         }
                                     }
                                     Spacer(minLength: 12)
@@ -90,106 +100,138 @@ struct DonationsView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 56, height: 56)
-                                                .foregroundColor(.white)
+                                                .foregroundColor(.gray)
                                         }
                                     }
                                 }
                                 .padding(14)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 6)
-                                        .stroke(.white, lineWidth: 2)
+                                        .stroke(.gray, lineWidth: 2)
                                 )
                                 .padding(.horizontal, 20)
                             }
                         }
                     }
-                    
+
                     // Botón “Enviar donación” abajo
                     Button {
-                        guard !donaciones.isEmpty else { return } // evita crash si está vacío
-                        donacionSeleccionada = donaciones.last
+                        guard let ultima = donaciones.last else { return }
+                        donacionSeleccionada = ultima
                         mostrarConfirmacion = true
                     } label: {
                         Text("Enviar donación")
                             .multilineTextAlignment(.center)
                             .font(.headline).bold()
-                            .foregroundColor(.white)
+                            .foregroundColor(azulOscuro)
                             .padding(.vertical, 14)
                             .padding(.horizontal, 18)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(donaciones.isEmpty ? Color.gray : Color(red: 0.00, green: 0.55, blue: 0.60))
+                                    .fill(donaciones.isEmpty
+                                          ? .white
+                                          : Color(red: 0.00, green: 0.55, blue: 0.60))
                             )
                             .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 6)
                     }
                     .padding(.bottom, 26)
-                    .disabled(donaciones.isEmpty) // Desactiva si no hay donaciones
+                    .disabled(donaciones.isEmpty)
                 }
             }
-            // Sheet para agregar nueva donación
-            .sheet(isPresented: $mostrarAgregar) {
-                AgregarDonacionView { nuevaDonacion in
-                    donaciones.append(nuevaDonacion)
-                    mostrarAgregar = false
-                }
-            }
-            // Alerta de confirmación de envío
+            // Alerta de confirmación
             .alert("¿Estás seguro de enviar la donación?", isPresented: $mostrarConfirmacion) {
-                Button("Cancelar", role: .cancel) { }
+                Button("Cancelar", role: .cancel) {}
+
                 Button("Enviar") {
-                    if let index = donaciones.firstIndex(where: { $0.id == donacionSeleccionada?.id }) {
-                        donaciones[index].estado = "En revisión"
+                    guard let seleccionada = donacionSeleccionada else { return }
+
+                    // Actualizar estado localmente
+                    if let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
+                        donaciones[idx].estado = "En revisión"
+                    }
+
+                    let pesoKg = pesoEnKg(desde: seleccionada.peso)
+                    print("Peso calculado en kg: \(pesoKg)")
+
+                    //  Llamada al backend AQUÍ
+                    Task {
+                        var urls: [String] = []
+
+                        // Mientras no tengas /upload implementado, usamos URLs mock
+                        if !seleccionada.imagenes.isEmpty {
+                            urls = seleccionada.imagenes.enumerated().map { index, _ in
+                                "https://example.com/mock-image-\(index).jpg"
+                            }
+                        }
+
+                        let payload = CreateDonationPayload(
+                            description: seleccionada.descripcion,
+                            weight: pesoKg,
+                            category: seleccionada.clasificacion,
+                            images: urls
+                        )
+
+                        do {
+                            let _ = try await postDonation(payload: payload)
+                            print(" Donación enviada al backend con \(urls.count) imágenes")
+                        } catch {
+                            print("Error enviando donación:", error)
+                        }
+                    }
+
+                    // Navegación según peso
+                    if pesoKg > 50 {
                         irADonacionEnviada = true
+                    } else {
+                        irABasares = true
                     }
                 }
             }
-            // Navegación a la vista de donación enviada, si no la uso se caga todo 
+
+            // Navegación a la vista de donación enviada
             .navigationDestination(isPresented: $irADonacionEnviada) {
                 if let donacion = donacionSeleccionada {
-                    DonacionEnviadaView(donacion: donacion)
+                    DonationEnviadaView(donacion: donacion)
                 } else {
                     Text("Error: No hay donación seleccionada")
                 }
             }
+
+            // Navegación a bazares (usamos tu vista ya hecha)
+            .navigationDestination(isPresented: $irABasares) {
+                BazarListView()   // tu bazar principal
+            }
+
             .navigationBarBackButtonHidden(true)
         }
-    }
-}
-
-struct DonacionEnviadaView: View {
-    let donacion: Donacion
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Donación enviada")
-                .font(.title)
-                .bold()
-            
-            if let foto = donacion.foto {
-                foto
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 150, height: 150)
-            } else {
-                Image(systemName: "shippingbox.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 100)
+        // Pantalla completa para agregar donación
+        .fullScreenCover(isPresented: $mostrarAgregar) {
+            AgregarDonacionView { nueva in
+                donaciones.append(nueva)
             }
-            
-            Text("Clasificación: \(donacion.clasificacion)")
-            Text("Descripción: \(donacion.descripcion)")
-            Text("Peso: \(donacion.peso)")
-            Text("Estado: \(donacion.estado ?? "En revisión")")
-                .foregroundColor(.green)
-                .bold()
-            
-            Spacer()
         }
-        .padding()
+    }
+
+    // MARK: - Helper para convertir "10 kg" / "500 g" a kg
+    private func pesoEnKg(desde texto: String) -> Double {
+        let partes = texto.split(separator: " ")
+        guard let numeroStr = partes.first else { return 0 }
+
+        let valor = Double(
+            numeroStr
+                .replacingOccurrences(of: ",", with: ".")
+        ) ?? 0
+
+        if partes.count > 1 {
+            let unidad = partes[1].lowercased()
+            if unidad.contains("g") {
+                return valor / 1000.0
+            }
+        }
+        return valor // se asume kg
     }
 }
 
 #Preview {
-    DonationsView()
+    DonationView()
 }

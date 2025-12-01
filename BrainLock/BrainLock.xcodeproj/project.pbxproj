@@ -11,9 +11,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		FB88BD9E2EA82A0D00DED886 /* BrainLock */ = {
+		28D1F3FC2ECD078100B7649F /* BrainLockUsuario */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BrainLock;
+			path = BrainLockUsuario;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		FB88BD932EA82A0D00DED886 = {
 			isa = PBXGroup;
 			children = (
-				FB88BD9E2EA82A0D00DED886 /* BrainLock */,
+				28D1F3FC2ECD078100B7649F /* BrainLockUsuario */,
 				FB88BD9D2EA82A0D00DED886 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				FB88BD9E2EA82A0D00DED886 /* BrainLock */,
+				28D1F3FC2ECD078100B7649F /* BrainLockUsuario */,
 			);
 			name = BrainLock;
 			packageProductDependencies = (
@@ -255,8 +255,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XLL93662Y7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "\"Brainlock necesita acceder a la camara para tomar foto de tus donaciones\"";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "\"Brainlock necesita acceder a tus fotos para adjuntar imagenes a tus donaciones\"";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -286,8 +289,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XLL93662Y7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "\"Brainlock necesita acceder a la camara para tomar foto de tus donaciones\"";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "\"Brainlock necesita acceder a tus fotos para adjuntar imagenes a tus donaciones\"";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

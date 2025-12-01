@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct LoginRegisterView: View {
-    @EnvironmentObject var auth: AuthStore
 
     // Recibe el modo inicial (0 = login, 1 = registro)
     var initialTab: Int = 0
@@ -122,7 +121,7 @@ struct LoginRegisterView: View {
                 .padding(.bottom, 16)
             }
             .navigationDestination(isPresented: $goToDonations) {
-                DonationsView()
+                DonationView()
             }
         }
     }
@@ -154,7 +153,7 @@ struct LoginRegisterView: View {
             password = ""
             confirm = ""
         } catch {
-            errorMsg = (error as? AuthStore.AuthError)?.errorDescription ?? error.localizedDescription
+            errorMsg = error.localizedDescription
         }
     }
 }

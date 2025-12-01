@@ -6,17 +6,17 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var auth: AuthStore
-
     // Estado de splash/animación
     @State private var isLoading = true
     @State private var scale: CGFloat = 1.0
 
     var body: some View {
         ZStack {
+            
+            Color.black.ignoresSafeArea()
             if isLoading {
                 ZStack {
-                    Image("Portada")
+                    Image("Portada3")
                         .resizable()
                         .scaledToFill()
                         .ignoresSafeArea()
@@ -32,7 +32,7 @@ struct ContentView: View {
                             withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
                                 scale = 2.05
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
                                 withAnimation(.easeInOut) {
                                     isLoading = false
                                 }
@@ -40,8 +40,12 @@ struct ContentView: View {
                         }
                 }
             } else {
-                VistaInicio()
-                    .transition(.opacity)
+                
+                NavigationStack{
+                    VistaInicio()
+                        .transition(.opacity)
+                }
+                .transition(.opacity)
             }
         }
     }
@@ -50,5 +54,4 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environmentObject(AuthStore()) // Se inyecta un AuthStore solo para el preview
 }
