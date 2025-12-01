@@ -44,14 +44,20 @@ struct FolioControl: View {
                             .padding()
 
                     } else {
-                        VStack(spacing: 16) {
-                            ForEach(donations) { donation in
-                                NavigationLink {
-                                    //FolioView(id: donation.id)
-                                } label: {
-                                    TarjetaDonation(donation: donation)
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(donations) { donation in
+                                    NavigationLink {
+                                        FolioView(id: donation.id) {
+                                            Task { await loadDonations()
+                                            }
+                                        }
+                                    } label: {
+                                        TarjetaDonation(donation: donation)
+                                    }
                                 }
                             }
+                            .padding(.vertical)
                         }
                     }
 
@@ -145,7 +151,7 @@ func getDonations() async throws -> [Donation] {
           200..<300 ~= httpResponse.statusCode else {
         throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
     }
-    print(data)
+    
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     return try decoder.decode([Donation].self, from: data)

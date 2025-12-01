@@ -14,6 +14,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            Color.black.ignoresSafeArea()
             if isLoading {
                 ZStack {
                     Image("Portada3")
@@ -32,7 +33,7 @@ struct ContentView: View {
                             withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
                                 scale = 2.05
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
                                 withAnimation(.easeInOut) {
                                     isLoading = false
                                 }
@@ -40,7 +41,7 @@ struct ContentView: View {
                         }
                 }
             }  else {
-                // Root decision
+                // Root decision                
                 if loggedRole.isEmpty {
                     VistaInicio()        // Shows login/register buttons
                 } else if loggedRole == "USER" {
@@ -53,6 +54,30 @@ struct ContentView: View {
     }
 }
 
+func validateSession() async throws -> Roles {
+    guard let url = URL(string: "/authorization/validate", relativeTo: AuthAPI.baseURL) else {
+        throw AuthError.invalidURL
+    }
+
+    guard let jwt = try? readJWTFromKeychain() else {
+        throw AuthError.missingJWT
+    }
+
+    var req = URLRequest(url: url)
+    req.httpMethod = "GET"
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+
+    let (data, response) = try await URLSession.shared.data(for: req)
+    guard let httpResponse = response as? HTTPURLResponse,
+          200..<300 ~= httpResponse.statusCode else {
+        throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
+    }
+    
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return try decoder.decode(Roles.self, from: data)
+}
 
 #Preview {
     ContentView()

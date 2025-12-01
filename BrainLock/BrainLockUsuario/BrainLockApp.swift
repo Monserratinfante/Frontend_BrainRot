@@ -13,9 +13,8 @@ struct BrainLockApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                VistaInicio()              // desde aquí navegas a LoginRegisterView()
-            }
+                ContentView()
+            
         }
     }
 }

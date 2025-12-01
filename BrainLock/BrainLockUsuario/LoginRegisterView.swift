@@ -159,7 +159,6 @@ struct LoginRegisterView: View {
             errorMsg = error.localizedDescription
         }
     }
-
 }
 
 

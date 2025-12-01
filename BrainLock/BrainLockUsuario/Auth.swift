@@ -10,6 +10,11 @@ import Security
 
 // MARK: - Models
 
+enum Roles: Decodable {
+    case USER
+    case ADMIN
+}
+
 struct RegisterPayload: Encodable {
     let email: String
     let password: String

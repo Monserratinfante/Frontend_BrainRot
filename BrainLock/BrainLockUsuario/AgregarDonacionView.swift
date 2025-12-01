@@ -1,5 +1,5 @@
 //
-//  AgregarDinacionesView
+//  AgregarDonacionView.swift
 //  BrainLock
 //
 //  Created by Alumno on 14/11/25.
@@ -7,49 +7,37 @@
 
 import SwiftUI
 import UIKit
-import MapKit
-
-
-// MARK: - Modelo actualizado
-struct DonacionView {
-    var clasificacion: String
-    var descripcion: String
-    var peso: String   // almacenará "X kg" o "X g"
-    var imagenes: [UIImage] = []
-}
 
 // MARK: - Vista principal
 struct AgregarDonacionView: View {
     @Environment(\.dismiss) var dismiss
-    
+
+    // Callback para regresar la donación a DonationView
+    var onAdd: (Donacion) -> Void
+
     // Campos
     @State private var clasificacion = ""
     @State private var descripcion = ""
     @State private var peso = ""
     @State private var unidadPeso = "kg"
-    
+
     // Errores
     @State private var errorClasificacion = false
     @State private var errorDescripcion = false
     @State private var errorPeso = false
-    
-    // Imagenes
+
+    // Imágenes
     @State private var selectedImages: [UIImage] = []
+    @State private var savedImageNames: [String] = []
     @State private var showingImagePicker = false
     @State private var inputImage: UIImage?
     @State private var pickerSource: UIImagePickerController.SourceType = .photoLibrary
-    
+
     let unidades = ["kg", "g"]
-    let opcionesClasificacion = ["Salud", "Higiene", "Alimentos", "Calzado", "Medicamentos", "Otro"]
+    // CAMBIAR POR LAS CATEGORÍAS REALES
+    let opcionesClasificacion = ["MEDICATION", "CLOTHING", "INMOBILIERAIRE"]
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
-    
-    var onAgregar: (Donacion) -> Void
-    
-    // Navegación nueva
-    @State private var irADonacionEnviada = false
-    @State private var irABasares = false
-    @State private var donacionFinal: Donacion?
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -57,33 +45,36 @@ struct AgregarDonacionView: View {
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-                
+                    .onTapGesture {
+                        hideKeyboard()
+                    }
+
                 ScrollView {
                     VStack(spacing: 20) {
-                        
+
                         Text("Agregar Producto")
                             .font(.largeTitle.bold())
                             .foregroundColor(azulOscuro)
                             .padding(.top, 100)
-                        
+
                         // CLASIFICACIÓN
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 16) {
                                 Text("Clasificación:")
                                     .foregroundColor(azulOscuro)
                                     .bold()
-                                
+
                                 Menu {
                                     Button("Selecciona una opción") {
                                         clasificacion = ""
                                     }
-                                    
+
                                     ForEach(opcionesClasificacion, id: \.self) { opcion in
                                         Button(opcion) {
                                             clasificacion = opcion
                                         }
                                     }
-                                    
+
                                 } label: {
                                     HStack {
                                         Text(clasificacion.isEmpty ? "Selecciona una opción" : clasificacion)
@@ -98,7 +89,7 @@ struct AgregarDonacionView: View {
                                     .cornerRadius(8)
                                 }
                             }
-                            
+
                             if errorClasificacion {
                                 Text("Debes seleccionar una clasificación.")
                                     .foregroundColor(.red)
@@ -106,20 +97,19 @@ struct AgregarDonacionView: View {
                             }
                         }
                         .padding(.horizontal)
-                        
-                        
+
                         // DESCRIPCIÓN
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Descripción")
                                 .foregroundColor(azulOscuro)
                                 .bold()
-                            
+
                             TextField("Descripción de la donación", text: $descripcion)
                                 .padding()
                                 .background(Color.white.opacity(0.2))
                                 .cornerRadius(8)
                                 .foregroundColor(azulOscuro)
-                            
+
                             if errorDescripcion {
                                 Text("Este campo es obligatorio.")
                                     .foregroundColor(.red)
@@ -127,32 +117,27 @@ struct AgregarDonacionView: View {
                             }
                         }
                         .padding(.horizontal)
-                        
-                        
+
                         // PESO + PICKER (KG/G)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Peso")
                                 .foregroundColor(azulOscuro)
                                 .bold()
-                            
+
                             HStack {
                                 TextField("Peso", text: Binding(
-                                    get: {
-                                        peso
-                                    },
+                                    get: { peso },
                                     set: { newValue in
-                                        // SOLO números
-                                        let filtered = newValue.filter { $0.isNumber }
+                                        let filtered = newValue.filter { $0.isNumber || $0 == "." }
                                         peso = filtered
                                     }
                                 ))
-                                .keyboardType(.numberPad)
+                                .keyboardType(.decimalPad)
                                 .padding()
                                 .background(Color.white.opacity(0.2))
                                 .cornerRadius(8)
                                 .foregroundColor(azulOscuro)
-                                
-                                // Picker de unidad
+
                                 Picker("", selection: $unidadPeso) {
                                     ForEach(unidades, id: \.self) { unidad in
                                         Text(unidad)
@@ -164,7 +149,7 @@ struct AgregarDonacionView: View {
                                 .background(Color.white.opacity(0.2))
                                 .cornerRadius(8)
                             }
-                            
+
                             if errorPeso {
                                 Text("Debes ingresar un peso válido.")
                                     .foregroundColor(.red)
@@ -172,17 +157,16 @@ struct AgregarDonacionView: View {
                             }
                         }
                         .padding(.horizontal)
-                        
-                        
+
                         // IMÁGENES
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Imágenes")
                                 .foregroundColor(azulOscuro)
                                 .bold()
-                            
+
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    
+
                                     ForEach(selectedImages, id: \.self) { image in
                                         Image(uiImage: image)
                                             .resizable()
@@ -191,7 +175,7 @@ struct AgregarDonacionView: View {
                                             .clipped()
                                             .cornerRadius(8)
                                     }
-                                    
+
                                     Button {
                                         pickerSource = .photoLibrary
                                         showingImagePicker = true
@@ -206,7 +190,7 @@ struct AgregarDonacionView: View {
                                         .background(Color.white.opacity(0.2))
                                         .cornerRadius(8)
                                     }
-                                    
+
                                     Button {
                                         pickerSource = .camera
                                         showingImagePicker = true
@@ -226,10 +210,9 @@ struct AgregarDonacionView: View {
                             .frame(height: 120)
                         }
                         .padding(.horizontal)
-                        
-                        
-                        // BOTÓN AGREGAR
-                        Button(action: validarYRedirigir) {
+
+                        // BOTÓN AGREGAR (solo crea donación local)
+                        Button(action: validarYCrearDonacion) {
                             Text("Agregar")
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -238,8 +221,7 @@ struct AgregarDonacionView: View {
                                 .cornerRadius(12)
                         }
                         .padding(.horizontal)
-                        
-                        
+
                         // CANCELAR
                         Button(action: { dismiss() }) {
                             Text("Cancelar")
@@ -255,113 +237,124 @@ struct AgregarDonacionView: View {
                 }
             }
         }
-        // Navega a "Donación Enviada"
-        .navigationDestination(isPresented: $irADonacionEnviada) {
-            if let d = donacionFinal {
-                DonationEnviadaView(donacion: d)
-            }
-        }
-        // Navega a "Basares"
-        // Navega a "Basares"
-        .navigationDestination(isPresented: $irABasares) {
-            BasarMapTemplate(
-                basarName: "Basar Principal",
-                address: "Monte Cristal 141, Juárez N.L.",
-                region: MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(latitude: 25.6510, longitude: -100.2040),
-                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-                ),
-                coordinate: CLLocationCoordinate2D(latitude: 25.6510, longitude: -100.2040)
-            )
-        }
-
+        // Picker de imágenes
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(image: $inputImage, sourceType: pickerSource)
                 .onDisappear {
                     if let img = inputImage {
                         selectedImages.append(img)
+                        let name = UUID().uuidString
+                        if let saved = saveImage(img, name: name) {
+                            savedImageNames.append(saved)
+                        }
                         inputImage = nil
                     }
                 }
         }
     }
-    
-    // VALIDACIÓN + REDIRECCIÓN NUEVA
 
-    func validarYRedirigir() {
+    // MARK: - FUNCIONES DE IMÁGENES
+
+    func saveImage(_ image: UIImage, name: String) -> String? {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
+        let url = FileManager.default
+            .urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("\(name).jpg")
+        do {
+            try data.write(to: url)
+            return url.lastPathComponent
+        } catch {
+            print("Error al guardar imagen:", error)
+            return nil
+        }
+    }
+
+    // MARK: - VALIDACIÓN (solo local, no backend)
+    func validarYCrearDonacion() {
+        print("BOTÓN AGREGAR TOCADO")
+
+        let descLimpia = descripcion.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pesoLimpio = peso.trimmingCharacters(in: .whitespacesAndNewlines)
+
         errorClasificacion = clasificacion.isEmpty
-        errorDescripcion = descripcion.isEmpty
-        errorPeso = peso.isEmpty
-        
+        errorDescripcion = descLimpia.isEmpty
+        errorPeso = pesoLimpio.isEmpty
+
         if errorClasificacion || errorDescripcion || errorPeso {
+            print("Validación básica falló")
             return
         }
-        
-        guard let pesoNum = Double(peso) else {
+
+        let pesoConvertible = pesoLimpio.replacingOccurrences(of: ",", with: ".")
+        guard let pesoNum = Double(pesoConvertible), pesoNum > 0 else {
             errorPeso = true
+            print(" Peso inválido: \(pesoLimpio)")
             return
         }
-        
-        let pesoKg = unidadPeso == "g" ? pesoNum / 1000 : pesoNum
-        
-        let pesoFinal = "\(peso) \(unidadPeso)"
-        
-        let nueva = Donacion(
+
+        let pesoFinal = "\(pesoLimpio) \(unidadPeso)"
+
+        // Crear donación local y regresarla al padre
+        let nuevaDonacion = Donacion(
             clasificacion: clasificacion,
-            descripcion: descripcion,
+            descripcion: descLimpia,
             peso: pesoFinal,
             imagenes: selectedImages
         )
-        
-        donacionFinal = nueva
-        onAgregar(nueva)
-        
-        // REGLA NUEVA:
-        if pesoKg > 50 {
-            irADonacionEnviada = true
-        } else {
-            irABasares = true
+
+        onAdd(nuevaDonacion)
+        dismiss()
+    }
+
+    // MARK: - ImagePicker interno
+    struct ImagePicker: UIViewControllerRepresentable {
+        @Binding var image: UIImage?
+        var sourceType: UIImagePickerController.SourceType = .photoLibrary
+
+        func makeUIViewController(context: Context) -> UIImagePickerController {
+            let picker = UIImagePickerController()
+            picker.sourceType = sourceType
+            picker.delegate = context.coordinator
+            return picker
         }
-    }
-}
 
+        func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
+        func makeCoordinator() -> Coordinator {
+            Coordinator(self)
+        }
 
-// MARK: - ImagePicker
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    var sourceType: UIImagePickerController.SourceType = .photoLibrary
+        class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+            let parent: ImagePicker
+            init(_ parent: ImagePicker) { self.parent = parent }
 
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-        init(_ parent: ImagePicker) { self.parent = parent }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let uiImage = info[.originalImage] as? UIImage {
-                parent.image = uiImage
+            func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+                if let uiImage = info[.originalImage] as? UIImage {
+                    parent.image = uiImage
+                }
+                picker.dismiss(animated: true)
             }
-            picker.dismiss(animated: true)
-        }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            picker.dismiss(animated: true)
+            func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+                picker.dismiss(animated: true)
+            }
         }
     }
 }
 
+// Extensión global para ocultar teclado
+import UIKit
+
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
+    }
+}
 
 // MARK: - Preview
 #Preview {
