@@ -1,0 +1,179 @@
+
+
+
+API MODELS
+struct DonationImagesResponse: Codable {
+    let donationId: Int
+    let images: [DonationImage]
+    let totalimages: Int
+}
+
+struct DonationImage: Codable, Identifiable {
+    let id: Int
+    let donationId: Int
+    let imageUrl: String     // URL absoluto para ver la imagen en tu backend
+    let originalPath: String // Ruta original guardada en BD
+    let filename: String
+}
+
+APICLIENT
+final class ApiClient {
+    private let baseURL = URL(string: "http://localhost:3000")!
+    
+    // MARK: - Subir imágenes
+    func uploadImages(donationId: Int, images: [Data]) async throws {
+        let url = baseURL.appendingPathComponent("donation/upload-images/\(donationId)")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        for (i, imgData) in images.enumerated() {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"images\"; filename=\"image\(i).jpg\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            body.append(imgData)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+        
+        _ = try await URLSession.shared.data(for: request)
+    }
+
+    // MARK: - Obtener imágenes de una donación
+    func fetchImages(donationId: Int) async throws -> DonationImagesResponse {
+        let url = baseURL.appendingPathComponent("donation/images/\(donationId)")
+        let (data, _) = try await URLSession.shared.data(from: url)
+        
+        return try JSONDecoder().decode(DonationImagesResponse.self, from: data)
+    }
+}
+
+
+VIEWMODEL 
+@MainActor
+class DonationImagesViewModel: ObservableObject {
+    @Published var selectedPhotos: [PhotosPickerItem] = []
+    @Published var selectedImageData: [Data] = []
+    @Published var donationImages: [DonationImage] = []
+    
+    private let api = ApiClient()
+    
+    func loadSelectedImages() {
+        Task {
+            var imgs: [Data] = []
+            
+            for item in selectedPhotos {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    imgs.append(data)
+                }
+            }
+            
+            selectedImageData = imgs
+        }
+    }
+    
+    func upload(donationId: Int) async {
+        do {
+            try await api.uploadImages(donationId: donationId, images: selectedImageData)
+            print("Upload OK")
+            await fetch(donationId: donationId)
+        } catch {
+            print("ERROR UPLOAD:", error)
+        }
+    }
+    
+    func fetch(donationId: Int) async {
+        do {
+            let res = try await api.fetchImages(donationId: donationId)
+            donationImages = res.images
+        } catch {
+            print("ERROR FETCH:", error)
+        }
+    }
+}
+
+
+EJEMPLO DE USO EN UI
+struct DonationImagesView: View {
+    @StateObject var vm = DonationImagesViewModel()
+    let donationId = 17  // <<--- EL TÚYO
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                
+                // SELECTOR
+                PhotosPicker(selection: $vm.selectedPhotos,
+                             maxSelectionCount: 5,
+                             matching: .images) {
+                    Text("Seleccionar imágenes")
+                        .padding()
+                        .background(.blue)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .onChange(of: vm.selectedPhotos) { _ in
+                    vm.loadSelectedImages()
+                }
+
+                // PREVIEW LOCAL
+                ForEach(vm.selectedImageData, id: \.self) { data in
+                    if let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 200)
+                            .cornerRadius(12)
+                    }
+                }
+
+                // UPLOAD BUTTON
+                Button("Subir imágenes") {
+                    Task { await vm.upload(donationId: donationId) }
+                }
+                .padding()
+                .background(.green)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+
+                Divider().padding()
+
+                // IMÁGENES DEL SERVIDOR
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Imágenes existentes").font(.title3)
+                    
+                    ForEach(vm.donationImages) { img in
+                        AsyncImage(url: URL(string: img.imageUrl)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 200)
+                                    .cornerRadius(12)
+                            case .failure:
+                                Color.red.frame(height: 200)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .task {
+            await vm.fetch(donationId: donationId)
+        }
+    }
+}

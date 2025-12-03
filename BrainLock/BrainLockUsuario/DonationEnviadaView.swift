@@ -1,19 +1,19 @@
-//
-//  DonationEnviadaView.swift
-//  BrainLock
-//
-//  Created by Fatima Cruz Hernandez on 18/11/25.
-//
-
 import SwiftUI
 
 struct DonationEnviadaView: View {
     let donacion: Donacion
+    let backendDonation: CreateDonationResponse?
+
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+    
+    // init con parámetro opcional para no romper otros lados
+    init(donacion: Donacion, backendDonation: CreateDonationResponse? = nil) {
+        self.donacion = donacion
+        self.backendDonation = backendDonation
+    }
     
     var body: some View {
         ZStack {
-
             // Fondo
             Image("Fondo")
                 .resizable()
@@ -29,7 +29,7 @@ struct DonationEnviadaView: View {
                     .foregroundStyle(azulOscuro)
                     .padding(20)
                 
-                //     CARRUSEL DE FOTOS
+                // CARRUSEL DE FOTOS
                 if !donacion.imagenes.isEmpty {
                     TabView {
                         ForEach(donacion.imagenes, id: \.self) { img in
@@ -64,6 +64,13 @@ struct DonationEnviadaView: View {
                     Text("Estado: \(donacion.estado ?? "En revisión")")
                         .foregroundColor(.green)
                         .bold()
+                    
+                    // 👇 Ejemplo de uso del backend, opcional
+                    if let backendDonation {
+                        Text("ID backend: \(Int(backendDonation.id))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                 }
                 .cardStyle()
                 
@@ -73,7 +80,6 @@ struct DonationEnviadaView: View {
         }
     }
 }
-
 
 // PREVIEW
 #Preview {

@@ -19,11 +19,12 @@ struct LoginRegisterView: View {
     @State private var confirm: String = ""
     @State private var accepted: Bool = false
     @State private var errorMsg: String? = nil
-    @State private var goToDonations: Bool = false
+    @State private var goToApp: Bool = false
+    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
-    // Inicializador para establecer el modo inicial
     init(initialTab: Int = 0) {
         self.initialTab = initialTab
         _tabIndex = State(initialValue: initialTab)
@@ -48,7 +49,7 @@ struct LoginRegisterView: View {
                         .frame(width: 180)
                         .padding(.top, 10)
 
-                    // Selector entre Login y Registro
+                    // Selector Login/Register
                     HStack(spacing: 8) {
                         Button(action: { tabIndex = 0; clearErrors() }) {
                             Text("LOGIN")
@@ -64,7 +65,7 @@ struct LoginRegisterView: View {
                     }
                     .padding(.top, 6)
 
-                    // Campos de texto
+                    // Inputs
                     Group {
                         TextField("email", text: $email)
                             .textInputAutocapitalization(.never)
@@ -83,29 +84,24 @@ struct LoginRegisterView: View {
                                 .padding(14)
                                 .foregroundColor(.black)
                                 .background(RoundedRectangle(cornerRadius: 12).stroke(.gray, lineWidth: 2))
-                            
-
                         }
-                        PrivacidadBox(isChecked: $accepted)
 
+                        PrivacidadBox(isChecked: $accepted)
                     }
                     .padding(.horizontal, 28)
 
-                    // Mensaje de error
+                    // Error
                     if let msg = errorMsg {
                         Text(msg)
                             .font(.footnote)
                             .foregroundColor(.red)
-                            .padding(.top, -6)
                             .padding(.horizontal, 28)
                             .multilineTextAlignment(.center)
                     }
 
-                    // Botón principal
+                    // Botón Login/Register
                     Button {
-                        Task {
-                            await submit()
-                        }
+                        Task { await submit() }
                     } label: {
                         Text(tabIndex == 0 ? "Ingresar" : "Crear cuenta")
                             .font(.headline).bold()
@@ -120,8 +116,10 @@ struct LoginRegisterView: View {
                 }
                 .padding(.bottom, 16)
             }
-            .navigationDestination(isPresented: $goToDonations) {
-                DonationView()
+            // AQUÍ SE CAMBIA LA NAVEGACIÓN
+            .navigationDestination(isPresented: $goToApp) {
+                BarraView2()   // YA NO DonationView()
+                    .navigationBarBackButtonHidden(true)
             }
         }
     }
@@ -130,34 +128,40 @@ struct LoginRegisterView: View {
 
     private func submit() async {
         errorMsg = nil
+        
         do {
             guard accepted else {
                 errorMsg = "Debes aceptar la política de privacidad."
                 return
             }
+
             if tabIndex == 0 {
-                let role = try await AuthAPI.login(email: email, password: password)
-                // TODO: redirect based on role
+                // LOGIN
+                let _ = try await AuthAPI.login(email: email, password: password)
             } else {
+                // REGISTER
                 guard password == confirm else {
                     errorMsg = "Las contraseñas no coinciden."
                     return
                 }
-                try await AuthAPI.register(
-                    email: email,
-                    password: password
-                )
-
+                try await AuthAPI.register(email: email, password: password)
             }
-            goToDonations = true
+
+            // GUARDAR ESTADO DE SESIÓN
+            isLoggedIn = true
+
+            // 👇 AQUI GUARDAS EL CORREO DEL USUARIO
+            UserDefaults.standard.set(email, forKey: "userEmail")
+
+            // 👇 IMPORTANTE PARA QUE NAVEGUE
+            goToApp = true
+
+            // Limpiar campos
             password = ""
             confirm = ""
+
         } catch {
             errorMsg = error.localizedDescription
         }
     }
 }
-
-
-
-

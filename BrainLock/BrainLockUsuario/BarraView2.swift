@@ -9,33 +9,22 @@ import SwiftUI
 
 struct BarraView2: View {
     
+    
     var body: some View {
         TabView {
-            HomeView()
-                .tabItem { Label("Home", systemImage: "house") }
-
-            FolioControl() 
-                .tabItem { Label("Solicitudes", systemImage: "doc.text") }
-
-            UsuarioView()
-                .tabItem { Label("Usuario", systemImage: "person.circle") }
+            DonationView()
+                .tabItem { Label("Donaciones", systemImage: "heart.fill") }
+            
+            UsuarioPerfil()
+                .tabItem{
+                    Label("Perfil", systemImage: "person.circule")
+                }
+            }
         }
     }
-}
 
 
-
-
-
-struct Usuario2PlaceholderView: View {
-    var body: some View {
-        NavigationStack {
-            Text("Perfil de usuario")
-                .navigationTitle("Usuario")
-        }
-    }
-}
 
 #Preview {
-    BarraView()
+    BarraView2()
 }

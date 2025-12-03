@@ -35,7 +35,17 @@ struct AgregarDonacionView: View {
 
     let unidades = ["kg", "g"]
     // CAMBIAR POR LAS CATEGORÍAS REALES
-    let opcionesClasificacion = ["MEDICATION", "CLOTHING", "INMOBILIERAIRE"]
+    let opcionesClasificacion = ["MEDICATION",
+                                 "CLOTHING",
+                                 "INMOBILIERAIRE",
+                                 "ALIMENTOS",
+                                 "ROPAYCALZADO",
+                                 "MUEBLES",
+                                 "OTROSARTICULOS",
+                                 "ELECTRODOMESTICOS",
+                                 "HIGIENEPERSONAL",
+                                 "MEDICINAS",
+                                 "ELECTRONICOS"]
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
     var body: some View {

@@ -14,6 +14,7 @@ struct CreateDonationPayload: Encodable {
     let weight: Double
     let category: String
     let images: [String]
+    
 }
 
 struct CreateDonationResponse: Decodable {
@@ -55,7 +56,7 @@ func postDonation(payload: CreateDonationPayload) async throws -> CreateDonation
 
     if !(200...299).contains(http.statusCode) {
         let bodyText = String(data: data, encoding: .utf8) ?? "<no body>"
-        print("❌ postDonation falló. Status: \(http.statusCode)")
+        print("postDonation falló. Status: \(http.statusCode)")
         print("Respuesta servidor (donation): \(bodyText)")
         throw AuthError.badStatus(http.statusCode, bodyText)
     }

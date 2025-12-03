@@ -15,6 +15,9 @@ struct Donacion: Identifiable {
     var peso: String          // Ej: "10 kg" o "500 g"
     var estado: String? = nil // "En revisión", "Aceptada", "Cancelada"
     var imagenes: [UIImage] = []
+    
+    // ID que viene del backend (para QR, etc.)
+    var backendId: Int? = nil
 }
 
 struct DonationView: View {
@@ -22,27 +25,32 @@ struct DonationView: View {
     @State private var mostrarAgregar = false
     @State private var mostrarConfirmacion = false
     @State private var donacionSeleccionada: Donacion? = nil
+    
+    @State private var ultimaRespuestaBackend: CreateDonationResponse? = nil
 
     @State private var irADonacionEnviada = false
     @State private var irABasares = false
+    @State private var folioActual: String? = nil     // folio que viene del backend
+    @State private var mostrarQR = false
+    @State private var folioParaQR: String? = nil
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+    private let apiClient = ApiClient()
 
     var body: some View {
         NavigationStack {
             ZStack {
-
                 azulOscuro
                     .ignoresSafeArea()
-
+                
                 Image("Fondo")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-
+                
                 VStack {
                     BaseHeader(title: "Donaciones")
-
+                    
                     // Botón de agregar donación arriba
                     Button {
                         mostrarAgregar = true
@@ -68,7 +76,7 @@ struct DonationView: View {
                         .padding(.horizontal, 20)
                     }
                     .buttonStyle(.plain)
-
+                    
                     // Lista de donaciones
                     ScrollView {
                         VStack(spacing: 12) {
@@ -113,7 +121,7 @@ struct DonationView: View {
                             }
                         }
                     }
-
+                    
                     // Botón “Enviar donación” abajo
                     Button {
                         guard let ultima = donaciones.last else { return }
@@ -134,74 +142,99 @@ struct DonationView: View {
                             )
                             .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 6)
                     }
-                    .padding(.bottom, 26)
+                    .padding(.bottom, 180)
                     .disabled(donaciones.isEmpty)
                 }
             }
-            // Alerta de confirmación
+            // ALERTA de confirmación
             .alert("¿Estás seguro de enviar la donación?", isPresented: $mostrarConfirmacion) {
                 Button("Cancelar", role: .cancel) {}
-
+                
                 Button("Enviar") {
                     guard let seleccionada = donacionSeleccionada else { return }
-
-                    // Actualizar estado localmente
+                    
+                    // Actualizar estado localmente de inmediato
                     if let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
                         donaciones[idx].estado = "En revisión"
                     }
-
+                    
                     let pesoKg = pesoEnKg(desde: seleccionada.peso)
                     print("Peso calculado en kg: \(pesoKg)")
-
+                    
                     //  Llamada al backend AQUÍ
                     Task {
-                        var urls: [String] = []
-
-                        // Mientras no tengas /upload implementado, usamos URLs mock
-                        if !seleccionada.imagenes.isEmpty {
-                            urls = seleccionada.imagenes.enumerated().map { index, _ in
-                                "https://example.com/mock-image-\(index).jpg"
-                            }
-                        }
-
+                        // 1. Payload SIN imágenes
                         let payload = CreateDonationPayload(
                             description: seleccionada.descripcion,
                             weight: pesoKg,
-                            category: seleccionada.clasificacion,
-                            images: urls
+                            category: seleccionada.clasificacion, images:[]
                         )
 
                         do {
-                            let _ = try await postDonation(payload: payload)
-                            print(" Donación enviada al backend con \(urls.count) imágenes")
+                            // 2. Crear donación en backend
+                            let created = try await postDonation(payload: payload)
+                            print("Donación creada con id \(created.id)")
+
+                            // 3. Subir imágenes en multipart
+                            let imageDatas = seleccionada.imagenes.compactMap { img in
+                                img.jpegData(compressionQuality: 0.8)
+                            }
+
+                            if !imageDatas.isEmpty {
+                                do {
+                                    try await apiClient.uploadImages(
+                                        donationId: Int(created.id),
+                                        images: imageDatas
+                                    )
+                                    print("Imágenes subidas correctamente")
+                                } catch {
+                                    print("Error subiendo imágenes:", error)
+                                }
+                            }
+
+                            // 4. Actualizar UI + navegación
+                            await MainActor.run {
+                                ultimaRespuestaBackend = created
+                                
+                                if let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
+                                    donaciones[idx].estado = "En revisión"
+                                    donaciones[idx].backendId = Int(created.id)
+                                }
+                                
+                                // guardamos folio como String para el QR
+                                folioActual = String(Int(created.id))
+
+                                if pesoKg > 50 {
+                                    irADonacionEnviada = true
+                                } else {
+                                    irABasares = true
+                                }
+                            }
                         } catch {
                             print("Error enviando donación:", error)
                         }
                     }
-
-                    // Navegación según peso
-                    if pesoKg > 50 {
-                        irADonacionEnviada = true
-                    } else {
-                        irABasares = true
-                    }
                 }
             }
-
             // Navegación a la vista de donación enviada
             .navigationDestination(isPresented: $irADonacionEnviada) {
                 if let donacion = donacionSeleccionada {
-                    DonationEnviadaView(donacion: donacion)
+                    DonationEnviadaView(
+                        donacion: donacion,
+                        backendDonation: ultimaRespuestaBackend
+                    )
                 } else {
                     Text("Error: No hay donación seleccionada")
                 }
             }
-
-            // Navegación a bazares (usamos tu vista ya hecha)
+            // Navegación a bazares (con folio real)
             .navigationDestination(isPresented: $irABasares) {
-                BazarListView()   // tu bazar principal
+                if let folio = folioActual {
+                    BazarListView(folio: folio)
+                } else {
+                    BazarListView(folio: "0") // fallback por si algo raro pasa
+                }
             }
-
             .navigationBarBackButtonHidden(true)
         }
         // Pantalla completa para agregar donación
@@ -211,24 +244,25 @@ struct DonationView: View {
             }
         }
     }
-
+    
     // MARK: - Helper para convertir "10 kg" / "500 g" a kg
     private func pesoEnKg(desde texto: String) -> Double {
         let partes = texto.split(separator: " ")
         guard let numeroStr = partes.first else { return 0 }
-
+        
         let valor = Double(
-            numeroStr
-                .replacingOccurrences(of: ",", with: ".")
+            numeroStr.replacingOccurrences(of: ",", with: ".")
         ) ?? 0
-
+        
+        // Si viene con unidad, la revisamos
         if partes.count > 1 {
             let unidad = partes[1].lowercased()
             if unidad.contains("g") {
                 return valor / 1000.0
             }
         }
-        return valor // se asume kg
+        // Si no tiene unidad o es "kg", asumimos kg
+        return valor
     }
 }
 

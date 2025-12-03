@@ -12,7 +12,6 @@ struct VistaInicio: View {
 
     
     var body: some View {
-        NavigationView {
             ZStack {
                 // Fondo de imagen
                 Image("Fondo")
@@ -128,15 +127,15 @@ Cáritas de Monterrey, A.B.P. mantiene y amplia los canales de comunicacion inte
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.top, 30)
-                        .padding(.bottom, 40)
+                        .padding(.top, 60)
+                        .padding(.bottom, 70)
                     }
                     .padding(.horizontal)
+                    Spacer()
                 }
             }
         }
     }
-}
 
 #Preview {
     VistaInicio()
