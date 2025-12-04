@@ -197,16 +197,25 @@ enum BazarData {
     ]
 }
 
-// MARK: - Vista de mapa
+
+// MARK: -  bazares map
 
 struct BazarMapView: View {
     @Environment(\.dismiss) var dismiss
     let bazar: Bazar
     let folio: String
-    
-    @State private var showQR = false
+    let onAccept: (Bazar) -> Void
+
+    @State private var cameraPosition: MapCameraPosition
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
+
+    init(bazar: Bazar, folio: String, onAccept: @escaping (Bazar) -> Void) {
+        self.bazar = bazar
+        self.folio = folio
+        self.onAccept = onAccept
+        _cameraPosition = State(initialValue: .region(bazar.region))
+    }
 
     var body: some View {
         ZStack {
@@ -231,29 +240,12 @@ struct BazarMapView: View {
                 }
                 .padding(.top, 12)
 
-                Map(initialPosition: .region(bazar.region)) {
+                Map(position: $cameraPosition) {
                     Marker(bazar.name, coordinate: bazar.coordinate)
-                    Annotation(bazar.name, coordinate: bazar.coordinate) {
-                        Image(systemName: "mappin.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 40, height: 40)
-                            .background(.white)
-                            .clipShape(Circle())
-                    }
                 }
                 .frame(height: 260)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 0.8)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 8)
-
+                
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: "mappin.and.ellipse")
@@ -290,9 +282,10 @@ struct BazarMapView: View {
                 Spacer()
                 
                 Button {
-                    showQR = true
+                    onAccept(bazar)
+                    dismiss()
                 } label: {
-                    Text("Ver QR de la donación")
+                    Text("Aceptar Bazar")
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding()
@@ -321,9 +314,6 @@ struct BazarMapView: View {
                 }
             }
         }
-        .navigationDestination(isPresented: $showQR) {
-            QRDonacionView(folio: folio)
-        }
     }
 }
 
@@ -331,77 +321,94 @@ struct BazarMapView: View {
 
 struct BazarListView: View {
     let folio: String
+    let onBazarSelected: (Bazar) -> Void   // se lo pasas desde DonationView
+    
+    // Usa aquí tu arreglo real de bazares
+    // Si ya lo tienes en otro lado como allBazares, puedes usarlo en vez de esto.
+    let bazares: [Bazar] = BazarData.all   
+    
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
-
+    
     var body: some View {
         ZStack {
+            // Fondo
             Image("Colores")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
-
-            VStack(alignment: .center, spacing: 16) {
-                Text("Bazares")
-                    .font(.system(size: 34, weight: .bold))
-                    .foregroundColor(azulOscuro)
-                    .padding(.top, 70)
-                    .padding(.horizontal)
-
-                Text("Selecciona el bazar más cercano para llevar tu donación.")
-                    .font(.subheadline)
-                    .bold()
-                    .foregroundColor(azulOscuro.opacity(0.8))
-                    .padding(.horizontal)
-                    .padding(.bottom, 4)
-
-                List {
-                    ForEach(BazarData.all) { bazar in
-                        NavigationLink {
-                            BazarMapView(bazar: bazar, folio: folio)
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(bazar.name)
-                                        .font(.headline)
-                                        .foregroundColor(azulOscuro)
-
-                                    Text(bazar.address.components(separatedBy: "\n").first ?? "")
-                                        .font(.subheadline)
-                                        .foregroundColor(.black.opacity(0.7))
-                                }
-                                Spacer()
-                            }
-                            .padding(16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(.ultraThinMaterial)
-                                    .background(
-                                        Color.white.opacity(0.05)
-                                            .clipShape(RoundedRectangle(cornerRadius: 20))
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                    )
-                                    .shadow(color: .black.opacity(0.30), radius: 10, x: 0, y: 6)
-                            )
-                        }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                    }
+            
+            VStack(alignment: .leading, spacing: 16) {
+                // Título
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Bazares Cáritas")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(azulOscuro)
+                        .shadow(radius: 3)
+                    
+                    Text("Selecciona el bazar donde entregarás tu donación.")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.85))
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 24)
+                .padding(.top, 40)
+                
+                // Lista
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(bazares) { bazar in
+                            NavigationLink {
+                                BazarMapView(
+                                    bazar: bazar,
+                                    folio: folio,
+                                    onAccept: { seleccionado in
+                                        // Este closure se ejecuta cuando el usuario pulsa "Aceptar Bazar"
+                                        onBazarSelected(seleccionado)
+                                    }
+                                )
+                            } label: {
+                                // Botón tipo “liquid glass”
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                                        )
+                                        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 6)
+                                    
+                                    HStack(spacing: 14) {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text(bazar.name)
+                                                .font(.headline)
+                                                .foregroundColor(.white)
+                                            
+                                            Text(bazar.address)
+                                                .font(.footnote)
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .lineLimit(2)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white.opacity(0.9))
+                                    }
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 14)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 20)
+                        }
+                    }
+                    .padding(.top, 10)
+                    .padding(.bottom, 40)
+                }
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(false)
     }
 }
 
-// MARK: - Preview
-
-#Preview {
-    NavigationStack {
-        BazarListView(folio: "12345")
-    }
-}

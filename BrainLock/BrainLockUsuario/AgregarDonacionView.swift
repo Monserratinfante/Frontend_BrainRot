@@ -286,6 +286,7 @@ struct AgregarDonacionView: View {
         let descLimpia = descripcion.trimmingCharacters(in: .whitespacesAndNewlines)
         let pesoLimpio = peso.trimmingCharacters(in: .whitespacesAndNewlines)
 
+        // Validaciones
         errorClasificacion = clasificacion.isEmpty
         errorDescripcion = descLimpia.isEmpty
         errorPeso = pesoLimpio.isEmpty
@@ -298,23 +299,27 @@ struct AgregarDonacionView: View {
         let pesoConvertible = pesoLimpio.replacingOccurrences(of: ",", with: ".")
         guard let pesoNum = Double(pesoConvertible), pesoNum > 0 else {
             errorPeso = true
-            print(" Peso inválido: \(pesoLimpio)")
+            print("Peso inválido: \(pesoLimpio)")
             return
         }
 
         let pesoFinal = "\(pesoLimpio) \(unidadPeso)"
 
-        // Crear donación local y regresarla al padre
         let nuevaDonacion = Donacion(
+            foto: selectedImages.first.map { Image(uiImage: $0) },
             clasificacion: clasificacion,
             descripcion: descLimpia,
             peso: pesoFinal,
-            imagenes: selectedImages
+            estado: "Pendiente",
+            imagenes: selectedImages,
+            backendId: nil,
+            bazarNombre: nil
         )
 
         onAdd(nuevaDonacion)
         dismiss()
     }
+    
 
     // MARK: - ImagePicker interno
     struct ImagePicker: UIViewControllerRepresentable {

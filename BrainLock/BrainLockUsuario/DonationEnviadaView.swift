@@ -3,13 +3,19 @@ import SwiftUI
 struct DonationEnviadaView: View {
     let donacion: Donacion
     let backendDonation: CreateDonationResponse?
+    let bazar: Bazar?
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
     
-    // init con parámetro opcional para no romper otros lados
-    init(donacion: Donacion, backendDonation: CreateDonationResponse? = nil) {
+    // INIT CORREGIDO
+    init(
+        donacion: Donacion,
+        backendDonation: CreateDonationResponse? = nil,
+        bazar: Bazar? = nil
+    ) {
         self.donacion = donacion
         self.backendDonation = backendDonation
+        self.bazar = bazar
     }
     
     var body: some View {
@@ -65,14 +71,51 @@ struct DonationEnviadaView: View {
                         .foregroundColor(.green)
                         .bold()
                     
-                    // 👇 Ejemplo de uso del backend, opcional
+                    // Mostrar el bazar si existe
+                    if let bazar {
+                        Text("Bazar seleccionado:")
+                            .foregroundStyle(azulOscuro)
+                            .bold()
+                            .padding(.top, 4)
+                        
+                        Text(bazar.name)
+                            .foregroundStyle(azulOscuro)
+                        
+                        Text(bazar.address)
+                            .foregroundStyle(.gray)
+                    }
+                    
+                    // Datos del backend (folio)
                     if let backendDonation {
-                        Text("ID backend: \(Int(backendDonation.id))")
+                        Text("Folio: \(Int(backendDonation.id))")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
                 }
                 .cardStyle()
+                .padding(.bottom, 16)
+                
+                // Botón para ver QR
+                if let backendDonation {
+                    NavigationLink {
+                        QRDonacionView(folio: String(Int(backendDonation.id)))
+                    } label: {
+                        HStack {
+                            Image(systemName: "qrcode")
+                            Text("Ver código QR")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(red: 0.0, green: 0.61, blue: 0.65))
+                        )
+                        .shadow(radius: 6, y: 4)
+                    }
+                    .padding(.bottom, 24)
+                }
                 
                 Spacer()
             }
@@ -81,20 +124,3 @@ struct DonationEnviadaView: View {
     }
 }
 
-// PREVIEW
-#Preview {
-    DonationEnviadaView(
-        donacion: Donacion(
-            foto: nil,
-            clasificacion: "Otros",
-            descripcion: "termo, platos y toppers",
-            peso: "3 kg",
-            estado: "Aceptada",
-            imagenes: [
-                UIImage(named: "termo")!,
-                UIImage(named: "platos")!,
-                UIImage(named: "toppers")!
-            ]
-        )
-    )
-}

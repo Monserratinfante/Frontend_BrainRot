@@ -1,8 +1,5 @@
 //
-//  DonationsView.swift
-//  BrainLock
-//
-//  Created by Fatima Cruz Hernandez on 27/10/25.
+//  DonationView.swift (Optimizado)
 //
 
 import SwiftUI
@@ -12,260 +9,321 @@ struct Donacion: Identifiable {
     var foto: Image? = nil
     var clasificacion: String
     var descripcion: String
-    var peso: String          // Ej: "10 kg" o "500 g"
-    var estado: String? = nil // "En revisión", "Aceptada", "Cancelada"
+    var peso: String
+    var estado: String? = nil
     var imagenes: [UIImage] = []
-    
-    // ID que viene del backend (para QR, etc.)
     var backendId: Int? = nil
+    var bazarNombre: String? = nil
 }
 
 struct DonationView: View {
+    // MARK: - Estados globales del flujo
     @State private var donaciones: [Donacion] = []
     @State private var mostrarAgregar = false
     @State private var mostrarConfirmacion = false
-    @State private var donacionSeleccionada: Donacion? = nil
     
+    @State private var donacionSeleccionada: Donacion? = nil
     @State private var ultimaRespuestaBackend: CreateDonationResponse? = nil
-
-    @State private var irADonacionEnviada = false
-    @State private var irABasares = false
-    @State private var folioActual: String? = nil     // folio que viene del backend
-    @State private var mostrarQR = false
-    @State private var folioParaQR: String? = nil
-
+    @State private var bazarSeleccionado: Bazar? = nil
+    
+    @State private var irADetalle = false
+    @State private var irABazares = false
+    @State private var irAQR = false
+    @State private var folioActual: String? = nil
+    
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
     private let apiClient = ApiClient()
-
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                azulOscuro
-                    .ignoresSafeArea()
-                
-                Image("Fondo")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea()
-                
-                VStack {
-                    BaseHeader(title: "Donaciones")
-                    
-                    // Botón de agregar donación arriba
-                    Button {
-                        mostrarAgregar = true
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(azulOscuro)
-                            Text("Agregar donación")
-                                .foregroundColor(azulOscuro)
-                                .font(.headline)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white.opacity(0.08))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
-                        )
-                        .padding(.horizontal, 20)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // Lista de donaciones
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            ForEach(donaciones) { item in
-                                HStack(alignment: .center) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(item.clasificacion)
-                                            .font(.headline)
-                                            .foregroundColor(.black)
-                                        Text(item.descripcion)
-                                            .foregroundColor(.black)
-                                        Text("Peso: \(item.peso)")
-                                            .foregroundColor(.black)
-                                        if let estado = item.estado {
-                                            Text("Estado: \(estado)")
-                                                .foregroundColor(.green)
-                                        }
-                                    }
-                                    Spacer(minLength: 12)
-                                    Group {
-                                        if let foto = item.foto {
-                                            foto
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 70, height: 70)
-                                                .cornerRadius(6)
-                                        } else {
-                                            Image(systemName: "shippingbox.fill")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 56, height: 56)
-                                                .foregroundColor(.gray)
-                                        }
-                                    }
-                                }
-                                .padding(14)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(.gray, lineWidth: 2)
-                                )
-                                .padding(.horizontal, 20)
-                            }
-                        }
-                    }
-                    
-                    // Botón “Enviar donación” abajo
-                    Button {
-                        guard let ultima = donaciones.last else { return }
-                        donacionSeleccionada = ultima
-                        mostrarConfirmacion = true
-                    } label: {
-                        Text("Enviar donación")
-                            .multilineTextAlignment(.center)
-                            .font(.headline).bold()
-                            .foregroundColor(azulOscuro)
-                            .padding(.vertical, 14)
-                            .padding(.horizontal, 18)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(donaciones.isEmpty
-                                          ? .white
-                                          : Color(red: 0.00, green: 0.55, blue: 0.60))
-                            )
-                            .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 6)
-                    }
-                    .padding(.bottom, 180)
-                    .disabled(donaciones.isEmpty)
-                }
+                fondo
+                contenido
             }
-            // ALERTA de confirmación
-            .alert("¿Estás seguro de enviar la donación?", isPresented: $mostrarConfirmacion) {
-                Button("Cancelar", role: .cancel) {}
-                
-                Button("Enviar") {
-                    guard let seleccionada = donacionSeleccionada else { return }
-                    
-                    // Actualizar estado localmente de inmediato
-                    if let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
-                        donaciones[idx].estado = "En revisión"
-                    }
-                    
-                    let pesoKg = pesoEnKg(desde: seleccionada.peso)
-                    print("Peso calculado en kg: \(pesoKg)")
-                    
-                    //  Llamada al backend AQUÍ
-                    Task {
-                        // 1. Payload SIN imágenes
-                        let payload = CreateDonationPayload(
-                            description: seleccionada.descripcion,
-                            weight: pesoKg,
-                            category: seleccionada.clasificacion, images:[]
-                        )
-
-                        do {
-                            // 2. Crear donación en backend
-                            let created = try await postDonation(payload: payload)
-                            print("Donación creada con id \(created.id)")
-
-                            // 3. Subir imágenes en multipart
-                            let imageDatas = seleccionada.imagenes.compactMap { img in
-                                img.jpegData(compressionQuality: 0.8)
-                            }
-
-                            if !imageDatas.isEmpty {
-                                do {
-                                    try await apiClient.uploadImages(
-                                        donationId: Int(created.id),
-                                        images: imageDatas
-                                    )
-                                    print("Imágenes subidas correctamente")
-                                } catch {
-                                    print("Error subiendo imágenes:", error)
-                                }
-                            }
-
-                            // 4. Actualizar UI + navegación
-                            await MainActor.run {
-                                ultimaRespuestaBackend = created
-                                
-                                if let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
-                                    donaciones[idx].estado = "En revisión"
-                                    donaciones[idx].backendId = Int(created.id)
-                                }
-                                
-                                // guardamos folio como String para el QR
-                                folioActual = String(Int(created.id))
-
-                                if pesoKg > 50 {
-                                    irADonacionEnviada = true
-                                } else {
-                                    irABasares = true
-                                }
-                            }
-                        } catch {
-                            print("Error enviando donación:", error)
-                        }
-                    }
-                }
-            }
-            // Navegación a la vista de donación enviada
-            .navigationDestination(isPresented: $irADonacionEnviada) {
-                if let donacion = donacionSeleccionada {
-                    DonationEnviadaView(
-                        donacion: donacion,
-                        backendDonation: ultimaRespuestaBackend
-                    )
-                } else {
-                    Text("Error: No hay donación seleccionada")
-                }
-            }
-            // Navegación a bazares (con folio real)
-            .navigationDestination(isPresented: $irABasares) {
-                if let folio = folioActual {
-                    BazarListView(folio: folio)
-                } else {
-                    BazarListView(folio: "0") // fallback por si algo raro pasa
-                }
-            }
-            .navigationBarBackButtonHidden(true)
         }
-        // Pantalla completa para agregar donación
+        .navigationDestination(isPresented: $irADetalle) {
+            DonationDetailDestination
+        }
+        .navigationDestination(isPresented: $irABazares) {
+            BazarListDestination
+        }
+        .navigationDestination(isPresented: $irAQR) {
+            QRDestination
+        }
+        .alert("¿Estás seguro de enviar la donación?", isPresented: $mostrarConfirmacion) {
+            Button("Cancelar", role: .cancel) { }
+            Button("Enviar") { enviarDonacion() }
+        }
         .fullScreenCover(isPresented: $mostrarAgregar) {
             AgregarDonacionView { nueva in
                 donaciones.append(nueva)
             }
         }
     }
+}
+
+// MARK: - Fondo
+extension DonationView {
+    var fondo: some View {
+        ZStack {
+            azulOscuro.ignoresSafeArea()
+            Image("Fondo")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+        }
+    }
+}
+
+
+// MARK: - Contenido principal
+extension DonationView {
+    var contenido: some View {
+        VStack {
+            BaseHeader(title: "Donaciones")
+            BotonAgregar
+            ListaDonaciones
+            BotonEnviar
+        }
+    }
+}
+extension DonationView {
+    var BotonAgregar: some View {
+        Button {
+            mostrarAgregar = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(azulOscuro)
+                
+                Text("Agregar donación")
+                    .foregroundColor(azulOscuro)
+                    .font(.headline)
+                
+                Spacer()
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct DonacionRow: View {
+    let item: Donacion
+    let onTap: () -> Void
     
-    // MARK: - Helper para convertir "10 kg" / "500 g" a kg
-    private func pesoEnKg(desde texto: String) -> Double {
-        let partes = texto.split(separator: " ")
-        guard let numeroStr = partes.first else { return 0 }
-        
-        let valor = Double(
-            numeroStr.replacingOccurrences(of: ",", with: ".")
-        ) ?? 0
-        
-        // Si viene con unidad, la revisamos
-        if partes.count > 1 {
-            let unidad = partes[1].lowercased()
-            if unidad.contains("g") {
-                return valor / 1000.0
+    var body: some View {
+        Button { onTap() } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(item.clasificacion).font(.headline).foregroundColor(.black)
+                    Text(item.descripcion).foregroundColor(.black).lineLimit(2)
+                    Text("Peso: \(item.peso)").foregroundColor(.black)
+                    
+                    if let estado = item.estado {
+                        Text("Estado: \(estado)")
+                            .foregroundColor(.green)
+                            .fontWeight(.semibold)
+                    }
+                }
+                
+                Spacer()
+                
+                DonacionImagen(item: item)
+            }
+            .padding(14)
+            .background(Color.white.opacity(0.85))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(.gray.opacity(0.4), lineWidth: 1))
+            .cornerRadius(8)
+            .shadow(color: .black.opacity(0.08), radius: 4)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+    }
+}
+
+struct DonacionImagen: View {
+    let item: Donacion
+    
+    var body: some View {
+        Group {
+            if let foto = item.foto {
+                foto.resizable().scaledToFit()
+            } else if let primera = item.imagenes.first {
+                Image(uiImage: primera)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "shippingbox.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.gray)
             }
         }
-        // Si no tiene unidad o es "kg", asumimos kg
+        .frame(width: 70, height: 70)
+        .clipped()
+        .cornerRadius(6)
+    }
+}
+
+extension DonationView {
+    var BotonEnviar: some View {
+        Button {
+            if let ultima = donaciones.last {
+                donacionSeleccionada = ultima
+                mostrarConfirmacion = true
+            }
+        } label: {
+            Text("Enviar donación")
+                .font(.headline).bold()
+                .foregroundColor(azulOscuro)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(donaciones.isEmpty ? .white : Color(red: 0.00, green: 0.55, blue: 0.60))
+                )
+                .shadow(color: .black.opacity(0.4), radius: 8)
+        }
+        .padding(.bottom, 180)
+        .disabled(donaciones.isEmpty)
+    }
+}
+
+extension DonationView {
+    var DonationDetailDestination: some View {
+        Group {
+            if let donacion = donacionSeleccionada {
+                AnyView(
+                    DonationEnviadaView(
+                        donacion: donacion,
+                        backendDonation: ultimaRespuestaBackend,
+                        bazar: bazarSeleccionado
+                    )
+                )
+            } else {
+                AnyView(Text("No se encontró la donación."))
+            }
+        }
+    }
+
+    
+    var BazarListDestination: some View {
+        BazarListView(
+            folio: folioActual ?? "0",
+            onBazarSelected: { bazar in
+                bazarSeleccionado = bazar
+
+                // Guardar nombre dentro de la donación seleccionada
+                if let seleccionada = donacionSeleccionada,
+                   let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
+                    donaciones[idx].bazarNombre = bazar.name
+                }
+
+                // Una vez seleccionado, navegar al detalle de la donación
+                irABazares = false
+                irADetalle = true
+            }
+        )
+    }
+    
+    var QRDestination: some View {
+        QRDonacionView(folio: folioActual ?? "0")
+    }
+}
+
+extension DonationView {
+    private func enviarDonacion() {
+        guard let seleccionada = donacionSeleccionada else { return }
+
+        // Actualizar estado local
+        if let idx = donaciones.firstIndex(where: { $0.id == seleccionada.id }) {
+            donaciones[idx].estado = "En revisión"
+        }
+
+        let pesoKg = pesoEnKg(desde: seleccionada.peso)
+
+        Task {
+            do {
+                let payload = CreateDonationPayload(
+                    description: seleccionada.descripcion,
+                    weight: pesoKg,
+                    category: seleccionada.clasificacion,
+                    images: []
+                )
+
+                let created = try await postDonation(payload: payload)
+
+                let imageDatas = seleccionada.imagenes.compactMap {
+                    $0.jpegData(compressionQuality: 0.8)
+                }
+
+                if !imageDatas.isEmpty {
+                    try? await apiClient.uploadImages(
+                        donationId: Int(created.id),
+                        images: imageDatas
+                    )
+                }
+
+                await MainActor.run {
+                    ultimaRespuestaBackend = created
+                    folioActual = "\(created.id)"
+
+                    if pesoKg > 50 {
+                        irAQR = true
+                    } else {
+                        irABazares = true
+                    }
+                }
+
+            } catch {
+                print("Error enviando:", error)
+            }
+        }
+    }
+
+    private func pesoEnKg(desde texto: String) -> Double {
+        let partes = texto.split(separator: " ")
+        guard let n = partes.first else { return 0 }
+        let valor = Double(n.replacingOccurrences(of: ",", with: ".")) ?? 0
+        
+        if partes.count > 1, partes[1].lowercased().contains("g") {
+            return valor / 1000
+        }
         return valor
     }
 }
 
-#Preview {
-    DonationView()
+// MARK: - Lista de Donaciones
+extension DonationView {
+    var ListaDonaciones: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(donaciones) { item in
+                    DonacionRow(item: item) {
+                        donacionSeleccionada = item
+                        irADetalle = true
+                    }
+                }
+                
+                if donaciones.isEmpty {
+                    Text("Aún no has agregado donaciones.")
+                        .foregroundColor(.black.opacity(0.8))
+                        .padding(.top, 40)
+                }
+            }
+            .padding(.top, 8)
+        }
+    }
 }
+
+
