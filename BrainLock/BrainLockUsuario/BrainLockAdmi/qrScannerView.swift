@@ -1,114 +1,82 @@
 import UIKit
 import AVFoundation
 
-class ViewController: UIViewController {
+class ScannerViewController: UIViewController {
 
     let session = AVCaptureSession()
-
-    // MARK: - Constants
-
-    private enum Constants {
-        static let alertTitle = "Scanning is not supported"
-        static let alertMessage = "Your device does not support scanning a code from an item. Please use a device with a camera."
-        static let alertButtonTitle = "OK"
-    }
-
-    // MARK: - View Lifecycle
+    var onCodeScanned: ((String) -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupCamera()
     }
 
-    // MARK: - Set up camera
-
     func setupCamera() {
-        guard let device = AVCaptureDevice.default(for: .video) else {
-            showAlert()
-            return
-        }
+        guard let device = AVCaptureDevice.default(for: .video) else { return }
 
         do {
             let input = try AVCaptureDeviceInput(device: device)
             let output = AVCaptureMetadataOutput()
 
             session.beginConfiguration()
-            
-            if session.canAddInput(input) {
-                session.addInput(input)
-            }
-
+            if session.canAddInput(input) { session.addInput(input) }
             if session.canAddOutput(output) {
                 session.addOutput(output)
-                output.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+                output.setMetadataObjectsDelegate(self, queue: .main)
                 output.metadataObjectTypes = [.qr]
             }
-
             session.commitConfiguration()
 
-            let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-            previewLayer.videoGravity = .resizeAspectFill
-            previewLayer.frame = view.bounds
-            view.layer.addSublayer(previewLayer)
+            let preview = AVCaptureVideoPreviewLayer(session: session)
+            preview.videoGravity = .resizeAspectFill
+            preview.frame = view.bounds
+            view.layer.addSublayer(preview)
 
-            // Start running session in background to avoid UI blocking
             DispatchQueue.global(qos: .userInitiated).async {
                 self.session.startRunning()
             }
 
         } catch {
-            showAlert()
             print("Camera error:", error)
         }
     }
-
-    // MARK: - Alert
-
-    func showAlert() {
-        let alert = UIAlertController(title: Constants.alertTitle,
-                                      message: Constants.alertMessage,
-                                      preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: Constants.alertButtonTitle,
-                                      style: .default))
-        present(alert, animated: true)
-    }
 }
 
-// MARK: - AVCaptureMetadataOutputObjectsDelegate
+extension ScannerViewController: AVCaptureMetadataOutputObjectsDelegate {
 
-extension ViewController: AVCaptureMetadataOutputObjectsDelegate {
-
-    private func metadataOutput(_ output: AVCaptureMetadataOutput,
+    func metadataOutput(_ output: AVCaptureMetadataOutput,
                         didOutput metadataObjects: [AVMetadataObject],
-                        from connection: AVCaptureConnection) async {
+                        from connection: AVCaptureConnection) {
+        
+        guard let metadata = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
+              metadata.type == .qr,
+              let value = metadata.stringValue else { return }
 
-        guard let metadataObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-              metadataObject.type == .qr,
-              let stringValue = metadataObject.stringValue else { return }
+        session.stopRunning()
 
-        print("QR Code detected:", stringValue)
-        do {
-            try await markDonationAsDelivered(donationId: stringValue)
-        } catch {
-            print("Error al actualizar la donación:", error)
+        DispatchQueue.main.async {
+
+            self.onCodeScanned?(value)
         }
     }
 }
+
 
 func markDonationAsDelivered(donationId: String) async throws {
         let baseURL = URL(string: "http://10.14.255.216:3000")!
 
         // URL de tu endpoint
-        guard let url = URL(string: "/donation/\(donationId)", relativeTo: baseURL) else {
+        guard let url = URL(string: "/donation/delivery/\(donationId)", relativeTo: baseURL) else {
             throw URLError(.badURL)
         }
+        print("URl->", url)
     
         guard let token = try readJWTFromKeychain() else {
             throw AuthError.badStatus(401, "No token stored in Keychain")
         }
         
         var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
+        request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
@@ -123,13 +91,15 @@ func markDonationAsDelivered(donationId: String) async throws {
                 return
             }
 
-            guard let data = data,
-                  let responseJSON = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                print("No se recibió respuesta válida")
+            guard let http = response as? HTTPURLResponse else { return }
+
+            if http.statusCode == 200 || http.statusCode == 204 {
+                print("Donación actualizada correctamente")
                 return
             }
 
-            print("respuesta:", responseJSON)
+            print("Respuesta inesperada del servidor:", http.statusCode)
+
         }
         task.resume()
     }

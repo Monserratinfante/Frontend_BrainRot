@@ -1,9 +1,10 @@
+
 import SwiftUI
 
 struct UsuarioPerfil: View {
 
     @AppStorage("userEmail") var userEmail: String = ""
-    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+    @State var logout = false
 
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
@@ -34,7 +35,12 @@ struct UsuarioPerfil: View {
             Spacer()
 
             Button {
-                isLoggedIn = false
+                do {
+                    try deleteJWTFromKeychain()
+                    logout = true
+                } catch {
+                    print("Error eliminando JWT: \(error)")
+                }
             } label: {
                 Text("Cerrar sesión")
                     .font(.headline.bold())
@@ -55,9 +61,13 @@ struct UsuarioPerfil: View {
                 .scaledToFill()
                 .ignoresSafeArea()
         )
+        .navigationDestination(isPresented: $logout) {
+            ContentView().navigationBarBackButtonHidden(true)
+        }
     }
 }
 
 #Preview {
     UsuarioPerfil()
 }
+

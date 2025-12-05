@@ -1,172 +1,271 @@
 //
 //  FolioView.swift
-//  caritas
-//
-//  Created by Gladys Pérez on 05/11/25.
+//  BrainLock
 //
 
 import SwiftUI
 
-struct EstadoBadge: View {
-    let estado: EstadoFolio
-
-    var body: some View {
-        Text(estado.rawValue)
-            .font(.caption)
-            .bold()
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(estado.color)
-            .foregroundColor(.white)
-            .clipShape(Capsule())
-    }
+struct User: Decodable {
+    var email: String
+    var username: String?
 }
 
+struct SingleDonation: Decodable {
+    var id: Int
+    var createdAt: Date
+    var user: User
+    var description: String
+    var category: String
+    var weight: Double
+}
+
+struct UpdateStatusPayload: Encodable {
+    var donationId: String
+    var donationStatus: String
+}
 
 struct FolioView: View {
-    @Binding var folio: Folio
+    @Environment(\.dismiss) var dismiss
+    var id: Int
+    var onStatusUpdated: (() -> Void)? = nil
+
+    @State private var donation: SingleDonation? = nil
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+    
+    private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
 
     @State private var mostrarConfirmacion = false
-    @State private var accionPendiente: EstadoFolio? = nil
+    @State private var accionPendiente: EstadoAccion? = nil
+
+    enum EstadoAccion {
+        case aprobado
+        case rechazado
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-
-                // Encabezado
-                HStack {
-                    Text("Folio \(folio.codigo)")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    Spacer()
-                    EstadoBadge(estado: folio.estado)
-                }
-
-                // Datos principales
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "calendar")
-                        Text("Fecha: \(folio.fecha)")
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                    Text("Descripción")
-                        .font(.headline)
-
-                    Text(folio.descripcion)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.white.opacity(0.9))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(.black.opacity(0.08), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
-
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Artículos donativos")
-                        .font(.headline)
-                    ForEach(mockArticulos, id: \.self) { item in
-                        HStack {
-                            Image(systemName: "cube.box")
-                            Text(item)
-                            Spacer()
-                        }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 10)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(.white.opacity(0.85))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(.black.opacity(0.06), lineWidth: 1)
-                        )
-                    }
-                }
-
-                // Botones de acción
-                VStack(spacing: 12) {
-                    Button {
-                        accionPendiente = .aprobado
-                        mostrarConfirmacion = true
-                    } label: {
-                        Text("Autorizar")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(EstadoFolio.aprobado.color)
-                            .foregroundColor(.white)
-                            .font(.headline)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    Button {
-                        accionPendiente = .negado
-                        mostrarConfirmacion = true
-                    } label: {
-                        Text("Rechazar")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(EstadoFolio.negado.color)
-                            .foregroundColor(.white)
-                            .font(.headline)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-                .padding(.top, 6)
-            }
-            .padding()
-        }
-        .navigationTitle("Detalle del folio")
-        .navigationBarTitleDisplayMode(.inline)
-        .alert("Confirmar acción", isPresented: $mostrarConfirmacion) {
-            Button("Confirmar", role: .destructive) {
-                if let accion = accionPendiente {
-                    folio.estado = accion  // actualiza el estado en ContentView!
-                }
-            }
-            Button("Cancelar", role: .cancel) { }
-        } message: {
-            Text(accionPendiente == .aprobado
-                 ? "¿Deseas autorizar este folio?"
-                 : "¿Deseas rechazar este folio?")
-        }
-        .background(
+        ZStack {
             Image("Fondo")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
                 .opacity(0.15)
-        )
+
+            ScrollView {
+                if isLoading {
+                    ProgressView("Cargando...")
+                        .padding(.top, 90)
+
+                } else if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .padding(.top, 90)
+
+                } else if let donation = donation {
+                    VStack(alignment: .leading, spacing: 16) {
+
+                        // Encabezado
+                        HStack {
+                            Text("Folio \(donation.id)")
+                                .font(.title)
+                                .fontWeight(.bold)
+                        }
+
+                        // Datos donación
+                        VStack(alignment: .leading, spacing: 12) {
+                            
+                            Group {
+                                HStack {
+                                    Image(systemName: "calendar")
+                                    Text("Fecha: \(donation.createdAt.formatted(date: .numeric, time: .shortened))")
+                                }
+
+                                HStack {
+                                    Image(systemName: "tag")
+                                    Text("Categoría: \(donation.category)")
+                                }
+
+                                HStack {
+                                    Image(systemName: "scalemass")
+                                    Text("Peso: \(donation.weight) kg")
+                                }
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                            Divider()
+
+                            // Usuario
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Usuario")
+                                    .font(.headline)
+                                
+                                HStack {
+                                    Image(systemName: "envelope")
+                                    Text(donation.user.email)
+                                }
+
+                                if let username = donation.user.username {
+                                    HStack {
+                                        Image(systemName: "person")
+                                        Text(username)
+                                    }
+                                }
+                            }
+                            .font(.body)
+                            .foregroundStyle(.primary)
+
+                            Divider()
+
+                            // Descripción
+                            Text("Descripción")
+                                .font(.headline)
+
+                            Text(donation.description)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding()
+                        .background(.white.opacity(0.9))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.black.opacity(0.08), lineWidth: 1)
+                        )
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
+
+                        // Botones
+                        VStack(spacing: 12) {
+                            Button {
+                                accionPendiente = .aprobado
+                                mostrarConfirmacion = true
+                            } label: {
+                                Text("Autorizar")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(azulOscuro)
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+
+                            Button {
+                                accionPendiente = .rechazado
+                                mostrarConfirmacion = true
+                            } label: {
+                                Text("Rechazar")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(.gray)
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        .padding(.top, 6)
+                    }
+                    .padding()
+                }
+            }.padding(.top, 70)
+        }
+        .navigationTitle("Detalle del folio")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadDonation()
+        }
+        .alert("Confirmar acción", isPresented: $mostrarConfirmacion) {
+            Button("Confirmar", role: .destructive) {
+                Task {
+                    await ejecutarAccion()
+                }
+            }
+            Button("Cancelar", role: .cancel) { }
+        } message: {
+            Text(accionPendiente == .aprobado
+                 ? "¿Deseas autorizar esta donación?"
+                 : "¿Deseas rechazar esta donación?")
+        }
+    }
+    
+    func loadDonation() async {
+        do {
+            guard let url = URL(string: "/donation/singleDonation/\(id)", relativeTo: AuthAPI.baseURL) else {
+                throw AuthError.invalidURL
+            }
+
+            guard let jwt = try? readJWTFromKeychain() else {
+                throw AuthError.missingJWT
+            }
+
+            var req = URLRequest(url: url)
+            req.httpMethod = "GET"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+
+            let (data, response) = try await URLSession.shared.data(for: req)
+
+            guard let http = response as? HTTPURLResponse,
+                  200..<300 ~= http.statusCode else {
+                throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
+            }
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            self.donation = try decoder.decode(SingleDonation.self, from: data)
+            self.errorMessage = nil
+            self.isLoading = false
+
+        } catch {
+            self.errorMessage = "Error cargando donación: \(error.localizedDescription)"
+            self.isLoading = false
+        }
     }
 
-    //Luego con datos reales
-    private var mockArticulos: [String] {
-        ["Cobijas (5 pzas.)",
-         "Leche en polvo (3 kg)"]
-    }
-}
+    func ejecutarAccion() async {
+        guard let accion = accionPendiente else { return }
 
+        let status = accion == .aprobado ? "AUTHORIZED" : "REJECTED"
 
-#Preview {
-    // Previsualización con folio de ejemplo usando .constant
-    FolioView(
-        folio: .constant(
-            Folio(
-                id: UUID(),
-                codigo: "#A1B2C",
-                fecha: "05/11/25",
-                estado: .enRevision,
-                descripcion: "Este es un ejemplo de folio en revisión con artículos donativos incluidos."
+        do {
+            guard let url = URL(string: "/donation/updateStatus", relativeTo: AuthAPI.baseURL) else {
+                throw AuthError.invalidURL
+            }
+
+            guard let jwt = try? readJWTFromKeychain() else {
+                throw AuthError.missingJWT
+            }
+
+            var req = URLRequest(url: url)
+            req.httpMethod = "PUT"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+            req.httpBody = try JSONEncoder().encode(
+                UpdateStatusPayload(donationId: String(id), donationStatus: status)
             )
-        )
-    )
+            
+            let (_, response) = try await URLSession.shared.data(for: req)
+
+            guard let http = response as? HTTPURLResponse,
+                  200..<300 ~= http.statusCode else {
+                throw AuthError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1, nil)
+            }
+
+            // Update local UI
+            self.accionPendiente = accion
+            
+            // Notify parent list to refresh
+            onStatusUpdated?()
+
+            // Show success alert
+            errorMessage = "Estado actualizado correctamente"
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                dismiss()
+            }
+        } catch {
+            errorMessage = "Error realizando acción: \(error.localizedDescription)"
+        }
+    }
 }

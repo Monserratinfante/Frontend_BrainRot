@@ -9,7 +9,6 @@ import SwiftUI
 
 struct VistaInicio: View {
     private let azulOscuro = Color(red: 0.0039, green: 0.227, blue: 0.3647)
-
     
     var body: some View {
             ZStack {
@@ -136,11 +135,6 @@ Cáritas de Monterrey, A.B.P. mantiene y amplia los canales de comunicacion inte
             }
         }
     }
-
-#Preview {
-    VistaInicio()
-}
-
 //
 //  --- MODIFICADOR GLOBAL ---
 //

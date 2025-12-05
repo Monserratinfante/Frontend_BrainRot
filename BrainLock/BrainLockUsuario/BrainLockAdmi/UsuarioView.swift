@@ -9,6 +9,7 @@ import SwiftUI
 
 struct UsuarioView: View {
     @State private var mostrarAlertaLogout = false
+    @State var logout = false
     
     var body: some View {
         NavigationStack {
@@ -52,9 +53,19 @@ struct UsuarioView: View {
                     }
                 }
                 .navigationTitle("Usuario")
+                .navigationDestination(isPresented: $logout) {
+                    ContentView().navigationBarBackButtonHidden(true)
+                }
                 .alert("¿Cerrar sesión?", isPresented: $mostrarAlertaLogout) {
                     Button("Cancelar", role: .cancel) {}
-                    Button("Cerrar sesión", role: .destructive) {}
+                    Button("Cerrar sesión", role: .destructive) {
+                        do {
+                            try deleteJWTFromKeychain()
+                            logout = true
+                        } catch {
+                            print("Error eliminando JWT: \(error)")
+                        }
+                    }
                 }
             }
             
